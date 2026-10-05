@@ -689,7 +689,7 @@ function drawRoad(){
   const car=activeCar();
   const steerAng=world.yaw;
   const bob=Math.sin(world.z*0.08)*2 + world.pitch*10 - (world.shake?Math.cos(performance.now()*0.05)*world.shake*0.25:0);
-  const carScreenX=W/2 + (world.playerX-world.camX)*W*0.42;
+  const carScreenX=W/2 + (world.playerX-world.camX)*W*0.28;
   const carScale=1.7*u*(1+world.nitroPower*0.04);
   // nitro flame
   if(world.nitroPower>0.05){
@@ -794,7 +794,7 @@ function updateDrive(dt){
       world.shake=Math.max(world.shake,6);
     }
   }
-  world.yaw=lerp(world.yaw, input.steer*0.2+world.vx*0.1, 1-Math.exp(-8*dt));
+  world.yaw=lerp(world.yaw, input.steer*0.08+world.vx*0.04, 1-Math.exp(-8*dt));
   world.pitch=lerp(world.pitch, clamp(accel*0.04,-0.08,0.1), 1-Math.exp(-6*dt));
 
   world.z+=world.speed*120*dt;
