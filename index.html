@@ -393,7 +393,7 @@ body.dk #hint{color:#9aa3bd}
 
 /* ---- src/10_core.js ---- */
 'use strict';
-const VERSION='3.0.0';
+const VERSION='3.0.1';
 /* ============ helpers ============ */
 const $=s=>document.querySelector(s);
 const TAU=Math.PI*2;
@@ -483,7 +483,7 @@ const specId=(t,a)=>{const L=SPEC_IDS[t];return L.length===1?L[0]:L[a|0];};
 /* ---- Evolution (DNA) gene tree ---- */
 const EVO=[
  {id:'genome',  max:8,c:3, g:1.9,n:'Genome',        col:'#12b886',d:l=>`All income x1.6 per level. Now x${fmtX(Math.pow(1.6,l))}.`},
- {id:'memory',  max:3,c:4, g:3,  n:'Genetic Memory',col:'#845ef7',d:l=>`Evolving keeps more skills: ${['tiers I-II','tiers I-III','tiers I-IV','every tier'][l]} survive.`},
+ {id:'memory',  max:3,c:4, g:3,  n:'Genetic Memory',col:'#845ef7',d:l=>`Evolving grants +25% DNA per level. Now +${l*25}%.`},
  {id:'jelly',   max:5,c:3, g:1.8,n:'Jelly Glands',  col:'#e64a9e',d:l=>`+30% Royal Jelly from Ascending per level. Now +${l*30}%.`},
  {id:'special', max:5,c:5, g:1.9,n:'Specialist',    col:'#f76707',d:l=>`Your lineage bonus is +50% stronger per level. Now +${l*50}%.`},
  {id:'splice',  max:5,c:6, g:2.1,n:'Gene Splicing', col:'#fa5252',d:l=>`+25% DNA from Evolving per level. Now +${l*25}%.`},
@@ -502,11 +502,11 @@ const COS=[
  {id:'cosmos',  max:10,c:1,g:1.55,n:'Cosmic Power', col:'#ff6bb5',d:l=>`All income x3 per level. Now x${fmtX(Math.pow(3,l))}.`},
  {id:'timelord',max:5, c:2,g:1.9, n:'Time Lord',    col:'#4dabf7',d:l=>`Time Warp lasts +20% longer and recharges 10% faster per level.`},
  {id:'supernova',max:5,c:2,g:1.9, n:'Supernova',    col:'#ff922b',d:l=>`Weapon cooldowns -8% per level. Now -${l*8}%.`},
- {id:'eternal', max:5, c:2,g:2.1, n:'Eternal Memory',col:'#be4bdb',d:l=>`Evolving keeps ${l*20}% of your Royal Jelly bonus.`},
+ {id:'eternal', max:5, c:2,g:2.1, n:'Eternal Memory',col:'#be4bdb',d:l=>`Evolving banks +50% extra Ascend jelly per level. Now +${l*50}%.`},
  {id:'omni',    max:4, c:3,g:2,   n:'Omnivore',     col:'#51cf66',d:l=>`The other three lineages work at ${l*25}% power too.`},
  {id:'soup',    max:5, c:2,g:2.1, n:'Primordial Soup',col:'#12b886',d:l=>`DNA from Evolving x1.5 per level. Now x${fmtX(Math.pow(1.5,l))}.`},
  {id:'flow',    max:5, c:3,g:2,   n:'Essence Flow', col:'#9775fa',d:l=>`+25% Cosmic Essence per Transcend per level.`},
- {id:'primal',  max:3, c:5,g:3.2, n:'Primal Heritage',col:'#fd7e14',d:l=>`After Transcending you start with species tier ${l||1} unlocked.`},
+ {id:'primal',  max:3, c:5,g:3.2, n:'Primal Heritage',col:'#fd7e14',d:l=>`Transcending also boosts your species tier by ${l||1} (capped at 7).`},
  {id:'autopilot',max:2,c:3,g:3,   n:'Autopilot',    col:'#868e96',d:l=>l>=2?'Auto-Ascend and Auto-Evolve (toggle in Settings).':'Auto-Ascend at the best moment (toggle in Settings).'},
  {id:'amberlord',max:3,c:3,g:2.4, n:'Amber Lord',   col:'#f59f00',d:l=>`Expedition Amber rewards +50% per level. Now +${l*50}%.`}
 ];
@@ -599,7 +599,7 @@ const warpCdT=()=>WARP_CD*(1-.1*cos('timelord'));
 /* prestige layers 2 and 3 */
 let EVO_D0=6, ESS_K=3000, DNA_C=1, DNA_B=1.25, ESS_C=1, ESS_E=.5; const EVO_MIN=1;
 function tuneSet(o){for(const k of ['EVO_D0','ESS_K','DNA_C','DNA_B','ESS_C','ESS_E'])if(o[k]!=null)eval(k+'=o[k]');if(o.TC)o.TC.forEach((v,i)=>{TIER_COST[i]=v;});if(o.TM)o.TM.forEach((v,i)=>{TIER_MUL[i]=v;});if(o.TN)o.TN.forEach((v,i)=>{TIER_NET[i]=v;});}
-const dnaMult=()=>(1+.25*evo('splice'))*Math.pow(1.5,cos('soup'));
+const dnaMult=()=>(1+.25*evo('splice'))*(1+.25*evo('memory'))*Math.pow(1.5,cos('soup'));
 /* DNA depends on how DEEP the era got: stage index + endless cycles (each Multiverse is ~4x harder than the last) */
 const depthNow=()=>(S.stage||0)+(S.cycle||0);
 const dnaGain=()=>{const d=S.depthEra||0;return d<EVO_D0?0:Math.floor(DNA_C*dnaMult()*Math.pow(DNA_B,d-EVO_D0+1));};
@@ -611,6 +611,8 @@ const simCap=()=>Math.max(10,Math.round(SIM_ANTS*(S.arch===1?1.25:1)/(1+.5*S.tie
 const wMul=()=>(1+.15*ae(0))*(1+.4*evo('smith'))*MC.wpn;
 const wCdMul=()=>Math.max(.3,1-.08*cos('supernova'));
 const keepTier=()=>Math.min(5,2+evo('memory'));
+const evolveJelly=()=>{const ag=rjGain(S.runEarned);if(!(ag>0))return 0;return Math.floor(ag*(1+.5*cos('eternal')));};
+const transcendJelly=()=>{const ag=rjGain(S.runEarned);return ag>0?ag:0;};
 const startStage=()=>Math.min(8,sk('veteran')+evo('ancestral'));
 function tripTime(sp){return 9.6/sp+0.4/Math.sqrt(sp);}
 /* expected income per second at current state (ideal play) */
@@ -1996,27 +1998,37 @@ function setArch(i){
 }
 function doEvolve(arch){
   const g=dnaGain();if(g<1||isSr())return;
+  const jelly=evolveJelly();
   S.dna+=g;S.dnaTotal+=g;S.dnaEra+=g;S.evolves++;
+  if(jelly>0){S.rj+=jelly;S.rjTotal+=jelly;S.rjEra+=jelly;}
+  S.runs++;
   if(arch!=null&&S.tier>=1)S.arch=arch;
-  const keep=Math.floor(S.rjTotal*.2*cos('eternal'));
-  S.rj=0;S.rjTotal=keep;S.rjEra=0;S.depthEra=0;
-  const kt=keepTier();for(const d of SKILLS)if(d.t>kt)S.sk[d.id]=0;
+  S.depthEra=0;
   S.bestStage=Math.max(S.bestStage,S.stage);
   freshRun(S);S.runTime=0;S.eaten=0;S.pieces=0;
   resetAfterPrestige();
-  flash=1;flashCol='#12b886';toast('Evolved!','+'+g+' DNA · spend it in Evolve');
+  flash=1;flashCol='#12b886';
+  toast('Evolved!','+'+fmt(g)+' DNA'+(jelly>0?' · +'+fmt(jelly)+' Royal Jelly':'')+' · keep skills & jelly');
   save();refreshButtons();updateHud(true);updateAbilities();skSig='';cqSig='';evSig='';
   setTab(2);
 }
 function doTranscend(){
   const g=essGain();if(g<1||isSr())return;
+  const dg=dnaGain(),jelly=transcendJelly();
   S.essence+=g;S.essTotal+=g;S.transcends++;
-  S.dna=0;S.dnaEra=0;S.evo={};S.tier=cos('primal');S.arch=S.tier?S.arch:0;
-  S.rj=0;S.rjTotal=0;S.rjEra=0;S.depthEra=0;S.sk={};S.bestStage=Math.max(S.bestStage,S.stage);
+  if(dg>0){S.dna+=dg;S.dnaTotal+=dg;}
+  if(jelly>0){S.rj+=jelly;S.rjTotal+=jelly;S.rjEra+=jelly;S.runs++;}
+  if(cos('primal'))S.tier=Math.min(7,S.tier+cos('primal'));
+  S.dnaEra=0;S.depthEra=0;
+  S.bestStage=Math.max(S.bestStage,S.stage);
   freshRun(S);S.runTime=0;S.eaten=0;S.pieces=0;
   S.load=S.load.map(id=>id);
   resetAfterPrestige();
-  flash=1;flashCol='#da77f2';toast('Transcended!','+'+g+' Cosmic Essence');
+  flash=1;flashCol='#da77f2';
+  const bits=['+'+fmt(g)+' Cosmic Essence'];
+  if(dg>0)bits.push('+'+fmt(dg)+' DNA');
+  if(jelly>0)bits.push('+'+fmt(jelly)+' Royal Jelly');
+  toast('Transcended!',bits.join(' · ')+' · keep DNA, skills & jelly');
   save();refreshButtons();updateHud(true);updateAbilities();skSig='';cqSig='';evSig='';
   setTab(2);
 }
@@ -2234,7 +2246,7 @@ function renderSkills(force){
   const sg=sigSkills();if(!force&&sg===skSig)return;skSig=sg;
   const page=$('#p1'),top=page.scrollTop;
   let h=`<div class="box rjhead"><svg viewBox="0 0 24 24" width="42" height="42"><path d="M12 2.5l8 4.6v9.8l-8 4.6-8-4.6V7.1z" fill="#ff7cc3"/><path d="M12 2.5l8 4.6-8 4.6-8-4.6z" fill="#ffc2e4"/><path d="M12 11.7v9.8l-8-4.6V7.1z" fill="#e64a9e" opacity=".55"/></svg><div><div class="big">${fmt(S.rj)}</div><small>Royal Jelly to spend · ${fmt(S.rjTotal)} earned in total = +${fmt(RJ_BONUS*S.rjTotal*100)}% income forever</small></div></div>`;
-  if(S.rjTotal===0)h+=`<div class="note">Skills are bought with Royal Jelly, which you earn by <b>Ascending</b> (Conquest tab). Skills survive Ascending; Evolving keeps the early tiers.</div>`;
+  if(S.rjTotal===0)h+=`<div class="note">Skills are bought with Royal Jelly, which you earn by <b>Ascending</b> (Conquest tab). Skills survive Ascending, Evolving and Transcending.</div>`;
   if(S.mutPend>0||S.mut.length){
     h+=`<h3>Mutations · this run</h3><div class="box">`;
     if(S.mutPend>0)h+=`<button class="btn pink" data-act="mutOpen" style="margin:0 0 8px">🧬 Choose a mutation (${S.mutPend} waiting)</button>`;
@@ -2433,8 +2445,8 @@ function updateHud(force){
   /* chips */
   const items=[];
   if(can)items.push(['gold','✦ Ascend ready +'+fmt(ascendGain())]);
-  if(canEvolve())items.push(['gold','🧬 Evolve ready +'+fmt(dnaGain())+' DNA','e']);
-  if(canTranscend())items.push(['gold','🌌 Transcend ready +'+fmt(essGain()),'t']);
+  if(canEvolve()){const j=evolveJelly();items.push(['gold','🧬 Evolve ready +'+fmt(dnaGain())+' DNA'+(j>0?' +'+fmt(j)+' RJ':''),'e']);}
+  if(canTranscend()){const j=transcendJelly(),d=dnaGain();items.push(['gold','🌌 Transcend ready +'+fmt(essGain())+' Ess'+(d>0?' +'+fmt(d)+' DNA':'')+(j>0?' +'+fmt(j)+' RJ':''),'t']);}
   if(S.mutPend>0)items.push(['gold','🧬 Mutation x'+S.mutPend,'m']);
   if(S.warpT>0)items.push(['warp','Time Warp '+Math.ceil(S.warpT)+'s']);
   if(S.frenzy>0)items.push(['fren','Frenzy x'+FRENZY_MULT+' '+Math.ceil(S.frenzy)+'s']);
@@ -2563,15 +2575,16 @@ function evLineage(){
     h+=`<div class="sk tier ${own?'own':can?'can':next?'':'lock'}" ${next?`data-act="buyTier"`:''}><div class="ic sp">${spImg(id,32)}</div><div class="bd"><div class="tt">${t===S.tier?'<em style="background:#12b886;color:#fff">NOW</em> ':''}${SPEC_NAME[id]}<em>${TIER_NAME[t]}</em></div><div class="ds">Income x${fmt(TIER_MUL[t])} · fewer, bigger units${t>=5?' · armed':''}</div></div><div class="go ${own?'':'dna'}">${own?'Owned':DNA_SVG+' '+cost}</div></div>`;
   }
   /* evolve */
-  const g=dnaGain(),can=g>=1,dp=S.depthEra||0,pr=clamp(dp/EVO_D0*100,0,100),nxt=Math.floor(DNA_C*dnaMult()*Math.pow(DNA_B,Math.max(dp,EVO_D0-1)-EVO_D0+2));
+  const g=dnaGain(),jelly=evolveJelly(),can=g>=1,dp=S.depthEra||0,pr=clamp(dp/EVO_D0*100,0,100),nxt=Math.floor(DNA_C*dnaMult()*Math.pow(DNA_B,Math.max(dp,EVO_D0-1)-EVO_D0+2));
   h+=`<h3>Prestige · Layer 2</h3><div class="box"><div style="font-weight:900;font-size:17px">Evolve</div>
-   <div class="note" style="margin:4px 0 8px">Reset your run <b>and Royal Jelly</b> for <b>DNA</b>. The <b>deeper</b> you conquered this era, the more DNA: x${DNA_B} for every extra stage or Multiverse. DNA buys species tiers (huge income), genes and weapons.</div>
+   <div class="note" style="margin:4px 0 8px">Reset the <b>run</b> (money, upgrades, conquest). You keep Royal Jelly, skills, DNA, genes, tier and weapons — and you bank <b>both DNA and Ascend jelly</b>. Deeper conquest this era = more DNA (x${DNA_B} per stage/Multiverse).</div>
    <div class="row"><span>DNA on Evolve</span><span style="color:#0ca678">+${fmt(g)}</span></div>
+   <div class="row"><span>Royal Jelly on Evolve</span><span style="color:#c2287f">+${fmt(jelly)}</span></div>
    <div class="row"><span>Deepest conquest this era</span><span>${depthName(dp)} (${dp}/${EVO_D0})</span></div>
    <div class="row"><span>Conquer one more for</span><span>+${fmt(nxt)} DNA</span></div>
    <div class="row"><span>Times evolved</span><span>${S.evolves}</span></div>
    ${can?'':`<div class="pbar"><i style="width:${pr}%;background:#12b886"></i></div><div class="note" style="margin:6px 0 0">Conquer the ${STAGE_NAMES[EVO_D0-1]} (stage ${EVO_D0}) in a single era to unlock Evolve.</div>`}
-   <button class="ascbtn evb" data-act="evolveOpen" ${can?'':'disabled'}>${can?'Evolve  ·  +'+fmt(g)+' DNA':'Not ready yet'}</button></div>`;
+   <button class="ascbtn evb" data-act="evolveOpen" ${can?'':'disabled'}>${can?'Evolve  ·  +'+fmt(g)+' DNA'+(jelly>0?' +'+fmt(jelly)+' RJ':'') :'Not ready yet'}</button></div>`;
   return h;
 }
 function evGenes(){
@@ -2600,10 +2613,12 @@ function evArsenal(){
 }
 function evCosmic(){
   let h=`<div class="box rjhead"><svg viewBox="0 0 24 24" width="42" height="42"><path d="M12 2l2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6z" fill="#da77f2"/></svg><div><div class="big" style="color:#ae3ec9">${fmt(S.essence)}</div><small>Cosmic Essence · ${fmt(S.essTotal)} earned · ${S.transcends} transcends</small></div></div>`;
-  const g=essGain(),can=g>=1,thr=essThreshold(),pr=clamp(S.dnaEra/thr*100,0,100);
+  const g=essGain(),dg=dnaGain(),jelly=transcendJelly(),can=g>=1,thr=essThreshold(),pr=clamp(S.dnaEra/thr*100,0,100);
   h+=`<h3>Prestige · Layer 3</h3><div class="box"><div style="font-weight:900;font-size:17px">Transcend</div>
-   <div class="note" style="margin:4px 0 8px">Reset <b>everything below</b>: DNA, genes, species tier, Royal Jelly and skills. Keep Cosmic Essence, the cosmic tree, <b>weapons</b>, achievements and Expedition progress.</div>
+   <div class="note" style="margin:4px 0 8px">Reset only the <b>run</b> and the Transcend/Evolve depth counters. You keep DNA, genes, tier, Royal Jelly, skills and weapons — and you bank <b>Essence, DNA and Ascend jelly</b>.</div>
    <div class="row"><span>Cosmic Essence on Transcend</span><span style="color:#ae3ec9">+${fmt(g)}</span></div>
+   <div class="row"><span>DNA on Transcend</span><span style="color:#0ca678">+${fmt(dg)}</span></div>
+   <div class="row"><span>Royal Jelly on Transcend</span><span style="color:#c2287f">+${fmt(jelly)}</span></div>
    <div class="row"><span>DNA found this era</span><span>${fmt(S.dnaEra)} / ${fmt(thr)}</span></div>
    ${can?'':`<div class="pbar"><i style="width:${pr}%;background:#da77f2"></i></div><div class="note" style="margin:6px 0 0">Find ${fmt(thr)} DNA since your last Transcend. Keep evolving!</div>`}
    <button class="ascbtn trb" data-act="transOpen" ${can?'':'disabled'}>${can?'Transcend  ·  +'+fmt(g)+' Essence':'Not ready yet'}</button></div><h3>Cosmic tree</h3>`;
@@ -2625,18 +2640,24 @@ ACT.transOpen=()=>openTranscend();
 function openEvolve(){
   const g=dnaGain();if(g<1||isSr())return;
   evPick=S.arch;
-  const kt=keepTier(),keep=Math.floor(S.rjTotal*.2*cos('eternal'));
+  const jelly=evolveJelly();
   const archHtml=S.tier>=1?`<div class="archg small">${ARCHS.map((a,i)=>`<button class="arch ${i===evPick?'on':''}" style="--c:${a.c}" data-act="evPickArch" data-arg="${i}"><b>${a.n}</b></button>`).join('')}</div>`:'';
-  showModal(`<h2>Evolve?</h2><p>Your colony sheds its past and mutates.</p><div class="big" style="color:#0ca678">+${fmt(g)} DNA</div>
-   <div class="stats"><div class="row"><span>Resets</span><span>run, money, upgrades, Royal Jelly${keep?` (keep ${fmt(keep)})`:''}</span></div><div class="row"><span>Skills lost</span><span>${kt>=5?'none':'tier '+(kt+1)+(kt<4?'+':'')}</span></div><div class="row"><span>Keeps</span><span>DNA, tier, genes, weapons</span></div></div>
+  showModal(`<h2>Evolve?</h2><p>Your colony sheds its past and mutates — and banks both currencies.</p>
+   <div class="big" style="color:#0ca678">+${fmt(g)} DNA</div>
+   <div class="big pk" style="margin-top:4px">+${fmt(jelly)} Royal Jelly</div>
+   <div class="stats"><div class="row"><span>Resets</span><span>run, money, upgrades, conquest progress</span></div><div class="row"><span>Keeps</span><span>Royal Jelly, skills, DNA, tier, genes, weapons</span></div></div>
    ${archHtml}<button class="btn good" data-act="evolveGo">Evolve</button><button class="btn ghost" data-act="close">Not yet</button>`);
 }
 ACT.evPickArch=(i)=>{evPick=+i;document.querySelectorAll('#card .arch').forEach((b,j)=>b.classList.toggle('on',j===evPick));};
 ACT.evolveGo=()=>{hideModal();doEvolve(S.tier>=1?evPick:null);};
 function openTranscend(){
   const g=essGain();if(g<1||isSr())return;
-  showModal(`<h2>Transcend?</h2><p>Leave this universe behind and be reborn among the stars.</p><div class="big" style="color:#ae3ec9">+${fmt(g)} Cosmic Essence</div>
-   <div class="stats"><div class="row"><span>Resets</span><span>DNA, genes, tier, jelly, skills, run</span></div><div class="row"><span>Keeps</span><span>Essence, cosmic tree, weapons, achievements, Expeditions</span></div><div class="row"><span>Starts at tier</span><span>${cos('primal')}</span></div></div>
+  const dg=dnaGain(),jelly=transcendJelly();
+  showModal(`<h2>Transcend?</h2><p>Leave this universe behind and bank every prestige currency.</p>
+   <div class="big" style="color:#ae3ec9">+${fmt(g)} Cosmic Essence</div>
+   <div class="big" style="color:#0ca678;margin-top:4px">+${fmt(dg)} DNA</div>
+   <div class="big pk" style="margin-top:4px">+${fmt(jelly)} Royal Jelly</div>
+   <div class="stats"><div class="row"><span>Resets</span><span>run, money, upgrades, conquest · era counters</span></div><div class="row"><span>Keeps</span><span>DNA, genes, tier, jelly, skills, weapons, Essence, cosmic tree</span></div>${cos('primal')?`<div class="row"><span>Primal Heritage</span><span>+${cos('primal')} species tier</span></div>`:''}</div>
    <button class="btn pink" data-act="transGo">Transcend</button><button class="btn ghost" data-act="close">Not yet</button>`);
 }
 ACT.transGo=()=>{hideModal();doTranscend();};
@@ -2862,13 +2883,13 @@ ACT.impGo=()=>{
   catch(e){$('#impErr').textContent='Could not import: '+(e&&e.message||'invalid code');}
 };
 function showWhatsNew(){
-  showModal(`<h2>Tiny Colony 3.0</h2><div class="wn">
-   <p><b>🧬 Evolve</b> — a new prestige layer. Spend DNA to evolve your workers from ants into beetles, wolves, dinosaurs, tribes, soldiers and finally cosmic beings.</p>
-   <p><b>🌌 Transcend</b> — a third layer with Cosmic Essence and a tree of huge permanent powers.</p>
-   <p><b>🔫 Arsenal</b> — 11 weapons from Acid Spit to the Black Hole Gun, with passives and a 3-slot loadout.</p>
-   <p><b>⚔️ Expeditions</b> — a roguelike mode with perks, relics, curses, bosses and seeds.</p>
-   <p><b>⏱️ Speedruns</b> — splits for all 10 stages, live deltas and a local top-10 leaderboard.</p>
-   <p><b>More</b> — mutations, random events, pheromone rush, hatchery, achievements, daily bonus, save export.</p></div>
+  showModal(`<h2>Tiny Colony 3.0.1</h2><div class="wn">
+   <p><b>✨ Prestige fix</b> — Evolve now banks <b>DNA and Royal Jelly</b> and keeps your skills. Transcend banks <b>Essence, DNA and jelly</b> and keeps DNA, genes, tier, skills and weapons. Only the run resets.</p>
+   <p><b>🧬 Evolve</b> — spend DNA to evolve workers from ants into beetles, wolves, dinosaurs, tribes, soldiers and cosmic beings.</p>
+   <p><b>🌌 Transcend</b> — Cosmic Essence and a tree of huge permanent powers.</p>
+   <p><b>🔫 Arsenal</b> — 11 weapons from Acid Spit to the Black Hole Gun.</p>
+   <p><b>⚔️ Expeditions</b> — roguelike mode with perks, relics, curses and bosses.</p>
+   <p><b>⏱️ Speedruns</b> — splits, live deltas and a local top-10 leaderboard.</p></div>
    <button class="btn good" data-act="close">Let's go</button>`);
 }
 
@@ -3582,8 +3603,9 @@ function renderRG(){
 let last=performance.now(),acc1=0,acc2=0,acc3=0,accA=0,accN=0,fps=60;
 function autopilot(){
   if(isSr()||!cos('autopilot'))return;
-  if(S.autoAsc&&canAscend()&&ascendGain()>=Math.max(ASC_MIN,S.rjTotal*.7)&&S.runTime>20){doAscend();}
-  else if(S.autoEvo&&cos('autopilot')>=2&&canEvolve()&&dnaGain()>=Math.max(1,Math.ceil(S.dnaTotal*.4))&&S.runTime>60){doEvolve(null);}
+  /* Prefer Evolve when ready: it banks DNA and Ascend jelly without wiping skills/RJ */
+  if(S.autoEvo&&cos('autopilot')>=2&&canEvolve()&&dnaGain()>=Math.max(1,Math.ceil(S.dnaTotal*.4))&&S.runTime>60){doEvolve(null);}
+  else if(S.autoAsc&&canAscend()&&ascendGain()>=Math.max(ASC_MIN,S.rjTotal*.7)&&S.runTime>20){doAscend();}
 }
 function step(dt){
   time+=dt;
@@ -3657,10 +3679,11 @@ spawnFood(Math.min(S.eaten,Math.max(0,S.pieces-1)),S.pieces>0?S.pieces:0);
 refreshButtons();updateHud(true);updateAbilities();updateUnitIcon();
 setupPWA();
 offlineCheck();
-if(S.seen.mig2&&!S.seen.v3&&modal.hidden){S.seen.v3=1;showWhatsNew();}
-else if(!S.seen.v3&&S.runs===0&&S.playTime<5){S.seen.v3=1;}
-else if(!S.seen.v3&&modal.hidden){S.seen.v3=1;showWhatsNew();}
-else if(S.seen.migrated&&!S.seen.intro&&modal.hidden){S.seen.intro=1;S.seen.v3=1;showWhatsNew();}
+if(S.seen.mig2&&!S.seen.v3&&modal.hidden){S.seen.v3=1;S.seen.v301=1;showWhatsNew();}
+else if(!S.seen.v3&&S.runs===0&&S.playTime<5){S.seen.v3=1;S.seen.v301=1;}
+else if(!S.seen.v3&&modal.hidden){S.seen.v3=1;S.seen.v301=1;showWhatsNew();}
+else if(S.seen.migrated&&!S.seen.intro&&modal.hidden){S.seen.intro=1;S.seen.v3=1;S.seen.v301=1;showWhatsNew();}
+else if(S.seen.v3&&!S.seen.v301&&modal.hidden){S.seen.v301=1;showWhatsNew();}
 let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{layout();if(rgActive)rgLayout();},60);});
 window.addEventListener('orientationchange',()=>setTimeout(layout,200));
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{last=performance.now();if(!rgActive)offlineCheck();}});
@@ -3685,7 +3708,7 @@ if(/debug/.test(location.hash)){
     addRJ(n){S.rj+=n;S.rjTotal+=n;S.rjEra+=n;skSig='';updateHud(true);},
     addDNA(n){S.dna+=n;S.dnaTotal+=n;S.dnaEra+=n;evSig='';updateHud(true);},addEss(n){S.essence+=n;S.essTotal+=n;evSig='';updateHud(true);},
     setTier(t){S.tier=t;syncAnts();buildSprites();updateUnitIcon();evSig='';},
-    fromObj,tune:tuneSet,rgk:o=>Object.assign(RGK,o),get rgT(){return RG_TIME;},fmt,stageGoal,pieceValue,estRate,mileMul,presMul,allMul,dnaGain,essGain,simCap,
+    fromObj,tune:tuneSet,rgk:o=>Object.assign(RGK,o),get rgT(){return RG_TIME;},fmt,stageGoal,pieceValue,estRate,mileMul,presMul,allMul,dnaGain,essGain,evolveJelly,transcendJelly,simCap,
     rg:{start:rgStart,calc:()=>rgCalc(S.rg.run),step:rgStep,exit:rgExit,end:rgEnd,get run(){return S.rg.run;},map:rgMap,ctrl:{pick:i=>ACT.rgPick(i),take:id=>ACT.rgTake(id)},options:()=>rgOptions(S.rg.run)},
     rgAuto(o){
       o=o||{};if(!rgActive)rgStart({seed:o.seed||'TEST1',sp:o.sp||'ant',heat:o.heat||0,starters:o.starters||[],daily:!!o.daily});
