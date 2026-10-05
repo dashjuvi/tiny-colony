@@ -245,8 +245,11 @@ const GADGETS=[
 ];
 
 let S, LB, canvas, ctx, W, H, u=1, started=false, tab='drive';
-const input={gas:0, left:0, right:0, steer:0};
-const world={z:0, hills:[], coins:[], traffic:[], rings:[], particles:[], floats:[], camY:0, speed:0, targetSpd:0, nitroT:0, magnetT:0, warpT:0, crashT:0, distance:0, runCash:0, hoops:[], ramps:[]};
+const input={gas:0, canvasGas:0, left:0, right:0, steer:0, steerAnalog:0};
+const world={z:0, hills:[], coins:[], traffic:[], rings:[], particles:[], floats:[],
+  camX:0, camY:0, speed:0, targetSpd:0, nitroT:0, nitroPower:0, magnetT:0, warpT:0, crashT:0,
+  distance:0, runCash:0, hoops:[], ramps:[],
+  playerX:0, vx:0, yaw:0, throttle:0, shake:0, pitch:0};
 const cds={nitro:0, magnet:0, missile:0, warp:0};
 
 function defaultState(sr=false){
@@ -263,7 +266,7 @@ function defaultState(sr=false){
     settings:{fx:true, autoBuy:false, haptic:true},
     ach:{}, daily:null, streak:0,
     isSr:!!sr, srSplits:{}, srStart:0, srDone:false,
-    whatsNew:true, version:'1.0.0'
+    whatsNew:true, version:'1.1.0'
   };
 }
 
@@ -408,6 +411,7 @@ function load(){
   UP.forEach(u=>{if(S.lv[u.id]==null)S.lv[u.id]=0;});
   [...SK_BP,...SK_CH,...SK_LG].forEach(s=>{if(S.sk[s.id]==null)S.sk[s.id]=0;});
   CARS.forEach(c=>{if(!S.carUp[c.id])S.carUp[c.id]={spd:0,hand:0,inc:0,nitro:0}; if(c.id==='hopper')S.owned[c.id]=true;});
+  if(S.version!=='1.1.0'){S.version='1.1.0'; S.whatsNew=true;}
   loadLB(); applyOffline();
 }
 function loadLB(){
@@ -426,7 +430,9 @@ function applyOffline(){
 function resetWorld(){
   world.z=0; world.distance=0; world.runCash=0; world.speed=0; world.targetSpd=0;
   world.hills=[]; world.coins=[]; world.traffic=[]; world.rings=[]; world.particles=[]; world.floats=[];
-  world.hoops=[]; world.ramps=[]; world.nitroT=0; world.magnetT=0; world.warpT=0; world.crashT=0; world.camY=0;
+  world.hoops=[]; world.ramps=[]; world.nitroT=0; world.nitroPower=0; world.magnetT=0; world.warpT=0; world.crashT=0;
+  world.camX=0; world.camY=0; world.playerX=0; world.vx=0; world.yaw=0; world.throttle=0; world.shake=0; world.pitch=0;
+  input.steer=0; input.steerAnalog=0;
   let z=200;
   for(let i=0;i<40;i++){ world.hills.push({z, h:rand(-40,60), w:rand(200,500)}); z+=rand(250,600); }
   z=300;
@@ -593,7 +599,8 @@ function drawRoad(){
     const scale=camH/(camH+dz);
     const y=H*0.55 + scale*(H*0.42) - yHill*scale*0.35 - world.camY*0.4;
     const w=roadW*W*scale;
-    const cx=W/2 + input.steer*(-0.08*W)*(1-scale);
+    const shakeX=(world.shake?Math.sin(world.z*0.4)*world.shake*0.15:0);
+    const cx=W/2 + (-world.camX)*0.2*W*(1-scale) + shakeX;
     const cur={y,w,cx,scale,z,dz,stripe:Math.floor(z/segLen)%2===0};
     if(prev && cur.y>prev.y-1 && cur.y<H+20){
       // grass sides
@@ -634,7 +641,7 @@ function drawRoad(){
     const dz=Math.max(1,z-world.z);
     const scale=camH/(camH+dz);
     const y=H*0.55 + scale*(H*0.42) - yHill*scale*0.35 - world.camY*0.4 - (yOff||0)*scale;
-    const cx=W/2 + input.steer*(-0.08*W)*(1-scale) + x*roadW*W*scale;
+    const cx=W/2 + (-world.camX)*0.2*W*(1-scale) + x*roadW*W*scale + (world.shake?Math.sin(world.z*0.4)*world.shake*0.15:0);
     return {x:cx,y,s:scale,dz};
   }
 
@@ -680,9 +687,23 @@ function drawRoad(){
   }
   ctx.globalAlpha=1;
   const car=activeCar();
-  const steerAng=input.steer*0.22;
-  const bob=Math.sin(world.z*0.08)*2;
-  drawCarSilhouette(car, W/2 + input.steer*W*0.12, H*0.78+bob, 1.7*u, steerAng);
+  const steerAng=world.yaw;
+  const bob=Math.sin(world.z*0.08)*2 + world.pitch*10 - (world.shake?Math.cos(performance.now()*0.05)*world.shake*0.25:0);
+  const carScreenX=W/2 + (world.playerX-world.camX)*W*0.42;
+  const carScale=1.7*u*(1+world.nitroPower*0.04);
+  // nitro flame
+  if(world.nitroPower>0.05){
+    ctx.save();
+    ctx.globalAlpha=0.35+0.45*world.nitroPower;
+    ctx.fillStyle='#4dabf7';
+    ctx.beginPath();
+    ctx.moveTo(carScreenX-10*u, H*0.78+bob+8*u);
+    ctx.lineTo(carScreenX, H*0.78+bob+(18+world.nitroPower*22)*u);
+    ctx.lineTo(carScreenX+10*u, H*0.78+bob+8*u);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  drawCarSilhouette(car, carScreenX, H*0.78+bob, carScale, steerAng);
   // speedo
   ctx.fillStyle='rgba(0,0,0,.5)'; ctx.beginPath(); ctx.roundRect(12,H-100,110,40,12); ctx.fill();
   ctx.fillStyle='#fff'; ctx.font=`bold ${15*u}px sans-serif`; ctx.textAlign='left';
@@ -718,20 +739,75 @@ function tick(t){
 }
 function updateDrive(dt){
   const car=activeCar();
-  const maxSpd=carStat(car,'spd')*(1+(S.sk.boost||0)*0.02)*(world.nitroT>0?1.85:1)*(world.crashT>0?0.3:1);
   const hand=carStat(car,'hand');
-  const accel=(2.2+S.lv.turbo*0.15)*(input.gas?1:-1.2);
-  if(input.gas) world.targetSpd=maxSpd;
-  else world.targetSpd=Math.max(0,world.targetSpd-dt*1.5);
-  world.speed=lerp(world.speed, Math.min(world.targetSpd,maxSpd), 1-Math.exp(-Math.abs(accel)*dt));
-  if(!input.gas && world.speed<0.05)world.speed=0;
-  const want=(input.right?1:0)-(input.left?1:0);
-  input.steer=lerp(input.steer, want*0.85, 1-Math.exp(-hand*4*dt));
+  const baseMax=carStat(car,'spd')*(1+(S.sk.boost||0)*0.02);
+  // Analog pedal / steer ramps (hold buttons feel progressive, not binary snap)
+  const gasWant=(input.gas||input.canvasGas)?1:0;
+  world.throttle=lerp(world.throttle, gasWant, 1-Math.exp(-(gasWant?7.5:5.5)*dt));
+  const padWant=(input.right?1:0)-(input.left?1:0);
+  // Prefer canvas/finger analog when present
+  const steerWant=Math.abs(input.steerAnalog)>0.02?input.steerAnalog:padWant;
+  const wheelRate=(3.2+hand*1.4)*(0.55+0.45*(1-clamp(world.speed/(baseMax+0.01),0,1)*0.7));
+  input.steer=lerp(input.steer, clamp(steerWant,-1,1), 1-Math.exp(-wheelRate*dt));
   input.steer=clamp(input.steer,-1,1);
+
+  // Nitro ramps in/out instead of teleporting top speed
+  const nitroWant=world.nitroT>0?1:0;
+  world.nitroPower=lerp(world.nitroPower, nitroWant, 1-Math.exp(-(nitroWant?4.2:2.4)*dt));
+  const nitroMul=1+0.9*world.nitroPower;
+  const crashSlow=world.crashT>0?lerp(0.45,1,1-clamp(world.crashT/0.9,0,1)):1;
+  const maxSpd=baseMax*nitroMul*crashSlow;
+  const spdFrac=clamp(world.speed/Math.max(0.35,maxSpd),0,1);
+
+  // Torque curve: strong off the line, falls near redline; coast/engine-brake when off throttle
+  const turbo=2.35+S.lv.turbo*0.18;
+  const torque=turbo*world.throttle*(1.2-0.65*spdFrac)*nitroMul;
+  const coast=(1-world.throttle)*(1.15+world.speed*0.85);
+  const aero=0.22+world.speed*world.speed*0.14;
+  let accel=torque - aero - coast;
+  if(world.crashT>0)accel-=1.8;
+  world.speed=Math.max(0, world.speed+accel*dt);
+  // Soft cap — can briefly overshoot then settle
+  if(world.speed>maxSpd)world.speed=lerp(world.speed,maxSpd,1-Math.exp(-3.5*dt));
+  if(world.throttle<0.05 && world.speed<0.04)world.speed=0;
+
+  // Lateral: understeer at speed, light drift (vx lags desired) without spin-outs
+  const understeer=1-spdFrac*clamp(0.62-hand*0.06,0.28,0.62);
+  const turnAuth=(0.85+hand*0.4)*understeer;
+  const desiredVx=input.steer*turnAuth*(0.35+world.speed*1.05);
+  const grip=3.4+hand*2.2 - spdFrac*1.6; // lower grip @ speed = slide
+  world.vx=lerp(world.vx, desiredVx, 1-Math.exp(-Math.max(1.2,grip)*dt));
+  // Slip angle smoke / tiny push when sliding hard
+  const slip=Math.abs(world.vx-desiredVx);
+  if(S.settings.fx && slip>0.55 && world.speed>0.6 && Math.random()<0.35){
+    world.particles.push({x:world.playerX+rand(-0.05,0.05),y:rand(0,2),vx:rand(-0.5,0.5),vy:rand(-1,0.2),life:rand(0.2,0.45),col:'rgba(220,220,220,.7)',z:world.z+4});
+  }
+  world.playerX+=world.vx*dt;
+  // Soft road edges — scrub speed, bounce back
+  if(Math.abs(world.playerX)>0.78){
+    const edge=Math.sign(world.playerX);
+    world.vx-=edge*(2.5+world.speed)*dt;
+    world.speed*=(1-1.2*dt);
+    if(Math.abs(world.playerX)>0.92){
+      world.playerX=clamp(world.playerX,-0.92,0.92);
+      world.vx*=-0.35;
+      world.shake=Math.max(world.shake,6);
+    }
+  }
+  world.yaw=lerp(world.yaw, input.steer*0.2+world.vx*0.1, 1-Math.exp(-8*dt));
+  world.pitch=lerp(world.pitch, clamp(accel*0.04,-0.08,0.1), 1-Math.exp(-6*dt));
+
   world.z+=world.speed*120*dt;
   world.distance+=world.speed*120*dt;
-  world.camY=lerp(world.camY, hillY(world.z+40)*0.3, 0.1);
-  const px=input.steer*0.55;
+
+  // Chase camera: smooth behind/above, slight look-ahead, no sticky snap
+  const look=input.steer*0.1+world.vx*0.12;
+  world.camX=lerp(world.camX, world.playerX+look, 1-Math.exp(-3.0*dt));
+  const hillT=hillY(world.z+55)*0.3 - world.speed*1.8 + world.pitch*18;
+  world.camY=lerp(world.camY, hillT, 1-Math.exp(-2.6*dt));
+  world.shake=Math.max(0, world.shake*Math.exp(-7*dt));
+
+  const px=world.playerX;
   const magR=(0.25+(S.lv.magnet*0.03)+(S.sk.magnetx||0)*0.06)*(world.magnetT>0?2.5:1);
   for(const c of world.coins){
     if(c.taken)continue;
@@ -756,10 +832,23 @@ function updateDrive(dt){
   }
   for(const t of world.traffic){
     if(!t.alive)continue;
+    if(t.hitT){t.hitT=Math.max(0,t.hitT-dt); if(t.hitT<=0)delete t.hitT;}
     const dz=t.z-world.z;
-    if(dz<-30){t.z+=rand(1000,1800); t.x=rand(-0.65,0.65); t.alive=true; continue;}
-    if(dz>5&&dz<28 && Math.abs(t.x-px)<(0.2+t.w*0.5)){
-      t.alive=false; world.crashT=1.2; world.speed*=0.35; burst(t.x,0,'#ff6b6b'); toast('Crash!','Slow down');
+    if(dz<-30){t.z+=rand(1000,1800); t.x=rand(-0.65,0.65); t.alive=true; delete t.hitT; continue;}
+    // Traffic creeps slowly so closing speed feels physical
+    t.z+=18*dt;
+    if(!t.hitT && dz>4&&dz<30 && Math.abs(t.x-px)<(0.18+t.w*0.5)){
+      const push=Math.sign(px-t.x)||(Math.random()<0.5?1:-1);
+      world.vx+=push*(1.35+world.speed*0.55);
+      world.playerX+=push*0.06;
+      world.speed*=0.58;
+      world.crashT=Math.max(world.crashT,0.9);
+      world.shake=Math.max(world.shake,14);
+      t.hitT=0.7;
+      t.z+=55; // weighty shove forward, not delete/teleport
+      burst(t.x,0,'#ff6b6b');
+      floatText(t.x,-10,'HIT','#ff8787');
+      if(S.settings.haptic && navigator.vibrate)try{navigator.vibrate(30);}catch(e){}
     }
   }
   const lastH=world.hills[world.hills.length-1];
@@ -1061,19 +1150,37 @@ function setupInput(){
   };
   bindHold(gas,'gas'); bindHold(L,'left'); bindHold(R,'right');
   N.addEventListener('click',()=>useGadget('nitro'));
+  // Canvas / finger steer: horizontal position maps to analog -1..1 (deadzone center)
+  const applyPointerSteer=(clientX, clientY, rect)=>{
+    const x=(clientX-rect.left)/rect.width;
+    const y=(clientY-rect.top)/rect.height;
+    // Lower 55% of screen: steering strip. Upper: ignore (HUD)
+    if(y<0.35)return;
+    const raw=(x-0.5)*2; // -1..1
+    const dead=0.12;
+    if(Math.abs(raw)<dead){ input.steerAnalog=0; }
+    else input.steerAnalog=clamp((Math.abs(raw)-dead)/(1-dead)*Math.sign(raw),-1,1);
+    // Top-center tap zone still acts as gas assist when not on pads
+    input.canvasGas=(y>0.55 && Math.abs(raw)<0.28)?1:0;
+  };
+  const clearAnalog=()=>{ input.steerAnalog=0; };
   canvas.addEventListener('touchstart',e=>{
     if(tab!=='drive')return;
     const t=e.changedTouches[0]; const rect=canvas.getBoundingClientRect();
-    const x=t.clientX-rect.left;
-    if(x<rect.width*0.35)input.left=1;
-    else if(x>rect.width*0.65)input.right=1;
-    else input.gas=1;
+    applyPointerSteer(t.clientX,t.clientY,rect);
   },{passive:true});
-  canvas.addEventListener('touchend',()=>{ input.left=0; input.right=0; input.gas=0; },{passive:true});
+  canvas.addEventListener('touchmove',e=>{
+    if(tab!=='drive')return;
+    const t=e.changedTouches[0]; const rect=canvas.getBoundingClientRect();
+    applyPointerSteer(t.clientX,t.clientY,rect);
+  },{passive:true});
+  canvas.addEventListener('touchend',()=>{ clearAnalog(); input.canvasGas=0; },{passive:true});
+  canvas.addEventListener('touchcancel',clearAnalog,{passive:true});
   window.addEventListener('keydown',e=>{
     if(e.key==='ArrowLeft'||e.key==='a')input.left=1;
     if(e.key==='ArrowRight'||e.key==='d')input.right=1;
     if(e.key==='ArrowUp'||e.key==='w'||e.key===' ') { e.preventDefault(); input.gas=1; }
+    if(e.key==='ArrowDown'||e.key==='s'){ e.preventDefault(); world.throttle=0; input.gas=0; world.speed=Math.max(0,world.speed-0.02); }
     if(e.key==='Shift')useGadget('nitro');
   });
   window.addEventListener('keyup',e=>{
@@ -1089,7 +1196,7 @@ function setupUI(){
     $('#startOverlay').style.display='none'; started=true;
     if(S.whatsNew){
       S.whatsNew=false; save();
-      showModal(`<h2>🏎️ Garage Rush</h2><p>Drive to collect cash rings. Your garage earns idle money. Unlock Porsche, Ferrari, Lamborghini, Aston Martin, Bugatti, Tesla & McLaren — then hypercars and space machines.</p>
+      showModal(`<h2>🏎️ Garage Rush</h2><p>v1.1 — driving physics overhauled: real throttle build-up, understeer, light drift, chase camera, weighty crashes and ramped nitro. Collect rings, grow the garage, unlock Porsche, Ferrari, Lamborghini, Aston Martin, Bugatti, Tesla & McLaren.</p>
         <p>Conquer 10 stages from Local Streets to the Multiverse. Prestige for Blueprints, Chassis & Legend. Try Speedrun under More.</p>
         <button class="btn good" data-act="close">Got it</button>`);
     }
@@ -1125,7 +1232,7 @@ window.addEventListener('resize',resize);
 document.addEventListener('visibilitychange',()=>{ if(document.hidden)save(); });
 setInterval(save,8000);
 requestAnimationFrame(tick);
-window.__GR={get S(){return S;}, fmt, gain, doAscend, doEvolve, doTranscend, resetWorld, advanceStage, CARS, STAGES, save, setCash(n){S.cash=n;}, setStage(n){S.stage=n; resetWorld();}, start(){started=true; $('#startOverlay').style.display='none';}};
+window.__GR={get S(){return S;}, get input(){return input;}, get world(){return world;}, useGadget, activeCar, carStat, fmt, gain, doAscend, doEvolve, doTranscend, resetWorld, advanceStage, CARS, STAGES, save, setCash(n){S.cash=n;}, setStage(n){S.stage=n; resetWorld();}, start(){started=true; $('#startOverlay').style.display='none';}};
 })();
 
 </script>
