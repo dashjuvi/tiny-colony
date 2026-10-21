@@ -44,20 +44,26 @@ button small{display:block;font-weight:500;font-size:10px;opacity:.9}
 .seg div{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.07);font-size:12px;font-weight:700}
 .seg div.on{background:#3c7cff}
 .prog{height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:4px}.prog i{display:block;height:100%;background:linear-gradient(90deg,#38c172,#9cf06f)}
-#toasts{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 96px);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+#toasts{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 196px);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
 .toast{padding:7px 12px;border-radius:12px;font-size:12.5px;font-weight:700;animation:tin .25s ease-out}
 @keyframes tin{from{transform:translateY(-10px);opacity:0}}
 #modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
 #modal .box{border-radius:20px;padding:16px;max-width:360px;width:100%;text-align:center;max-height:80vh;overflow:auto}
 #modal h2{margin:0 0 8px}
-#evb{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 94px);font-size:12px;padding:4px 10px;border-radius:12px;display:none;color:#ffe08a;font-weight:700;white-space:nowrap}
+#evb{position:fixed;left:8px;top:calc(env(safe-area-inset-top) + 140px);font-size:12px;padding:4px 10px;border-radius:12px;display:none;color:#ffe08a;font-weight:700;white-space:nowrap}
 table{width:100%;font-size:11.5px;border-collapse:collapse}td{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.07)}
 .gn{color:#6dff9a}.rd{color:#ff7b7b}
+#autob{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 98px);display:flex;gap:5px;align-items:center;z-index:5}
+#autob button{padding:7px 11px;font-size:13px}
+#autoBtn.on{background:linear-gradient(180deg,#38e08a,#16a35a);box-shadow:0 0 14px #3dff9a,0 0 28px rgba(61,255,154,.5);animation:glow 1.2s ease-in-out infinite alternate}
+@keyframes glow{to{box-shadow:0 0 6px #3dff9a,0 0 14px rgba(61,255,154,.3)}}
+#ticker{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 138px);font-size:10.5px;color:#bfffd8;text-align:right;pointer-events:none;text-shadow:0 1px 2px #000;max-width:62vw}
+#ticker div{opacity:.9}
 </style></head><body>
 <canvas id="cv"></canvas>
 <div id="top" class="glass"><div id="res"></div><div id="bar2"><span id="era"></span><span id="mapl"></span><span id="army"></span><span id="timer"></span></div></div>
 <div id="evb" class="glass"></div>
-<div id="toasts"></div>
+<div id="toasts"></div><div id="autob"><button id="autoBtn" onclick="toggleAuto()">🤖 AUTO</button><button class="o" onclick="optimise()">⚡ Optimise</button><button onclick="autoSettings()">⚙️</button></div><div id="ticker"></div>
 <div id="panel" class="glass"></div>
 <div id="sheet" class="glass"></div>
 <div id="tabs" class="glass">
@@ -66,7 +72,7 @@ table{width:100%;font-size:11.5px;border-collapse:collapse}td{padding:3px 2px;bo
 <div id="modal"><div class="box glass" id="mbox"></div></div>
 <script>
 "use strict";
-const VER='1.1';
+const VER='1.2';
 const $=id=>document.getElementById(id);
 const cv=$('cv'),cx=cv.getContext('2d');
 let W=0,H=0,DPR=1;
@@ -127,7 +133,7 @@ const QPOOL=[['claims','Claim {n} tiles',12],['builds','Build or upgrade {n} tim
 let S,G={tiles:[],map:new Map(),R:9,battles:[],parts:[],floats:[],chests:[],sel:null,dirty:true};
 function fresh(){return{v:1,res:{food:0,wood:0,stone:0,gold:60,sci:0},era:0,tech:{},army:{m:0,r:0,c:0,s:0},trained:{m:0,r:0,c:0,s:0},legacy:0,perks:{},stars:0,aperks:{},
 ml:1,seed:(Math.random()*1e9)|0,tiles:null,ais:null,rt:0,splits:[],lb:[],st:{claims:0,builds:0,wins:0,caps:0,research:0,dyn:0,asc:0,vic:0,chests:0,wonders:0,train:0},
-runGold:0,runCaps:0,ach:{},daily:null,set:{fx:1,shake:1,snd:0},last:Date.now(),vicRun:0,wonders:{},nextEv:40,nextChest:8,evs:[],raidT:60}}
+runGold:0,runCaps:0,ach:{},daily:null,set:{fx:1,shake:1,snd:0},auto:{on:0,b:1,c:1,r:1,a:1,res:10},last:Date.now(),vicRun:0,wonders:{},nextEv:40,nextChest:8,evs:[],raidT:60}}
 const P=k=>S.perks[k]||0, AP=k=>S.aperks[k]||0;
 function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 function vnoise(seed){const r=rng(seed),g={};const h=(x,y)=>{const k=x+','+y;if(g[k]===undefined)g[k]=r();return g[k]};
@@ -247,7 +253,7 @@ function ensureDaily(){if(!S.daily||S.daily.k!==dayKey()){const r=rng(Date.now()
 function qInc(id,n=1){if(!S.daily)return;for(const q of S.daily.q)if(q.id===id&&!q.done){q.c+=n;if(q.c>=q.n){q.done=1;const g=Math.max(100,RATE.gold*60);S.res.gold+=g;S.legacy+=1;toast('📜 Quest done: +'+fmt(g)+'🪙 +1 Legacy','#9cf06f')}}}
 function legacyGain(){const g=Math.sqrt(S.runGold/400)*(1+.5*S.runCaps)*(1+.5*(S.ml-1))*Math.pow(1.35,S.era)*(1+.2*P('leg'))*Math.pow(1.5,AP('leg2'));return S.era>=2?Math.floor(g):0}
 function starGain(){return(S.vicRun||S.era>=8)?Math.floor(1+S.ml+Math.sqrt(S.legacy+legacyGain())/6):0}
-function newRun(){const keep={legacy:S.legacy,perks:S.perks,stars:S.stars,aperks:S.aperks,lb:S.lb,st:S.st,ach:S.ach,daily:S.daily,set:S.set,ml:S.ml};
+function newRun(){const keep={auto:S.auto,legacy:S.legacy,perks:S.perks,stars:S.stars,aperks:S.aperks,lb:S.lb,st:S.st,ach:S.ach,daily:S.daily,set:S.set,ml:S.ml};
  S=Object.assign(fresh(),keep);S.ml=1;S.era=Math.min(8,P('herit')+2*AP('warp'));for(let e=0;e<S.era;e++){for(let i=0;i<4;i++)S.tech[e+'_'+i]=1;S.splits.push(0)}
  const st=P('start');if(st)for(const k of RES)S.res[k]+=100*st*st*Math.pow(3,S.era);S.res.gold+=60*Math.pow(3,S.era);
  genMap();loadTiles();let ring=[T(S.cap[0],S.cap[1])];for(let i=0;i<P('head');i++){const nx=[];for(const t of ring)for(const n of nbrs(t))if(n.o===-1&&!n.camp){n.o=0;nx.push(n)}ring=nx}
@@ -343,9 +349,38 @@ function step(dt){S.rt+=dt;calcRates();for(const k of RES)S.res[k]+=RATE[k]*dt;S
  if(P('auto')){autoT+=dt;if(autoT>Math.max(1,6-P('auto'))){autoT=0;autoClaim()}}
  if(P('build')){bldT+=dt;if(bldT>Math.max(.8,4-.6*P('build'))){bldT=0;autoBuild()}}
  if(AP('ancient'))for(let i=0;i<4;i++)if(research(S.era,i))break;
+ if(S.auto&&S.auto.on){autoAcc+=dt;if(autoAcc>=autoInt()){autoAcc=0;autoStep()}}
  shake*=.88;flash*=.94;
  uiT+=dt;if(uiT>.25){uiT=0;renderTop();if(G.sel)renderPanelSoft();if($('sheet').style.display==='block')renderSheetSoft();checkAch()}
  saveT+=dt;if(saveT>10){saveT=0;save()}}
+
+const lvF=L=>L*Math.pow(1.1,L)*Math.pow(1.5,Math.floor(L/10));
+let autoAcc=0,tick=[];
+function tk(m){tick.unshift(m);tick=tick.slice(0,3);$('ticker').innerHTML=tick.map(t=>'<div>🤖 '+t+'</div>').join('')}
+function okRes(c){const r=(S.auto.res||0)/100;return Object.keys(c).every(k=>c[k]<=S.res[k]*(1-r)||(r===0&&c[k]<=S.res[k]))}
+function demand(){const d={food:1,wood:1,stone:1,gold:1,sci:1};for(const t of G.tiles)if(t.o===0&&t.b&&t.b!=='wonder'){const c=buildCost(t,t.b);for(const k in c)d[k]+=c[k]*.2}
+ const cc=claimCost();d.gold+=cc.gold;for(let i=0;i<4;i++)if(techOk(S.era,i)){d.sci+=techCost(S.era,i);break}
+ for(const R of ROLES){const c=unitCost(R);for(const k in c)d[k]+=c[k]*.3}
+ for(const k in BLD.farm.cost){}return d}
+function bottleneck(){const d=demand();let bk='food',bv=1e300;for(const k of RES){if(k==='sci')continue;const v=(RATE[k]+.01)/d[k];if(v<bv){bv=v;bk=k}}return bk}
+function autoStep(){const A=S.auto;let did=0;
+ if(A.r){for(let i=0;i<4;i++)if(techOk(S.era,i)&&S.res.sci>=techCost(S.era,i)&&research(S.era,i)){tk('Researched '+(i===3?ERAS[S.era]+' Era':techName(S.era,i)));did++;break}}
+ const bn=bottleneck();const w={};for(const k of RES)w[k]=(k===bn?4:1)/(RATE[k]+1);
+ if(A.b){let best=null,bs=0;
+  for(const t of G.tiles){if(t.o!==0||t.city)continue;const opts=t.b?(t.b==='wonder'||t.b==='barracks'?[]:[t.b]):Object.keys(BLD).filter(k=>BLD[k].ok.includes(t.t)&&k!=='wonder'&&k!=='barracks');
+   for(const k of opts){const B=BLD[k],L=t.b?t.bl:0,c=buildCost(t,k);if(!okRes(c))continue;const gl=lvF(L+1)-lvF(L);let g=0;for(const r in B.r)g+=B.r[r]*(B.bonus[t.t]||1)*MULT[r]*gl*w[r];
+    let cv=0;for(const r in c)cv+=c[r]/(RATE[r]+1);const sc=g/(cv+1);if(sc>bs){bs=sc;best=[t,k]}}}
+  if(!S.wonders[S.era]){for(const t of G.tiles)if(t.o===0&&!t.b&&!t.city&&BLD.wonder.ok.includes(t.t)){const c=buildCost(t,'wonder');if(okRes(c)){best=[t,'wonder'];break}}}
+  if(best){const [t,k]=best;const up=!!t.b;if(build(t,k)){tk((up?'Upgraded ':'Built ')+BLD[k].n+(up?' Lv'+t.bl:'')+' ('+RIC[bn]+' focus)');did++}}}
+ if(A.c){const c=claimCost();if(okRes(c)){let best=null,bs=-1;for(const t of G.tiles)if(t.o===-1&&!t.camp&&adjOwn(t)){const y=TER[t.t].y;let sc=.01;for(const k in y)sc+=y[k]*(k===bn?4:1);if(sc>bs){bs=sc;best=t}}if(best&&claim(best)){tk('Claimed '+TER[best.t].n);did++}}}
+ if(A.a){let thr=0;for(const t of G.tiles)if(t.o===0)for(const n of nbrs(t))if(n.o>0&&S.ais[n.o-1].alive)thr=Math.max(thr,aiStr(S.ais[n.o-1]));
+  if(thr&&armyPow()*.45<thr*.8){const R=ROLES.slice(0,3).sort((a,b)=>Object.values(unitCost(a)).reduce((x,y)=>x+y)/a.p-Object.values(unitCost(b)).reduce((x,y)=>x+y)/b.p)[0];if(okRes(unitCost(R))&&train(R,1)){tk('Trained '+R.n[S.era]+' (raid threat)');did++}}}
+ return did}
+window.toggleAuto=()=>{S.auto.on^=1;$('autoBtn').classList.toggle('on',!!S.auto.on);tk(S.auto.on?'Auto ON':'Auto OFF');save()};
+window.optimise=()=>{let n=0;for(let i=0;i<40;i++){const d=autoStep();n+=d;if(!d)break}toast('⚡ Optimised: '+n+' actions');renderTop()};
+window.autoSettings=()=>{const A=S.auto;const tg=(k,l)=>`<div class="row"><div class="tx"><b>${l}</b></div><button class="${A[k]?'g':''}" onclick="S.auto.${k}^=1;autoSettings()">${A[k]?'On':'Off'}</button></div>`;
+ modal(`<h2>🤖 Auto settings</h2>${tg('b','Build & upgrade')}${tg('c','Claim tiles')}${tg('r','Research')}${tg('a','Train defenders vs raids')}<div class="row"><div class="tx"><b>Reserve ${A.res}%</b>Keep this share of each resource unspent</div><input type="range" min="0" max="50" step="5" value="${A.res}" oninput="S.auto.res=+this.value;this.parentNode.querySelector('b').textContent='Reserve '+this.value+'%'"></div><div style="font-size:11px;color:#9ab;margin:6px 0">Speed: every ${autoInt().toFixed(2)}s. Surveyors & Master Builders Legacy perks make it faster.</div><button class="g" onclick="closeModal();save()">Done</button>`)};
+function autoInt(){return Math.max(.35,1-.07*(P('auto')+P('build')))}
 function autoClaim(){if(!can(claimCost()))return;for(const t of G.tiles)if(t.o===-1&&!t.camp&&t.t!=='water'&&adjOwn(t)){claim(t);return}}
 function autoBuild(){let best=null,bc=1e300;for(const t of G.tiles)if(t.o===0&&t.b&&t.b!=='wonder'){const c=buildCost(t,t.b);if(!can(c))continue;const v=Object.values(c).reduce((a,b)=>a+b,0);if(v<bc){bc=v;best=t}}if(best)build(best,best.b)}
 function draw(time){if(G.dirty)redrawTerrain();const c=cx;c.setTransform(DPR,0,0,DPR,0,0);
@@ -451,6 +486,6 @@ function offline(){const dt=Math.min(8*3600,(Date.now()-S.last)/1000);S.last=Dat
  modal(`<div style="font-size:44px">🌙</div><h2>Welcome back!</h2><p>Away ${fmtT(dt)}. Your realm produced (${Math.round(eff*100)}%):</p><p>${RES.map(k=>RIC[k]+' '+fmt(got[k])).join('<br>')}</p><button class="g" onclick="closeModal()">Collect</button>`)}
 S=fresh();
 if(!load()){genMap();loadTiles();setTimeout(()=>modal(`<div style="font-size:50px">⬡👑</div><h2>Hex Dominion</h2><p style="font-size:13.5px;text-align:left">🚩 Tap glowing tiles next to your border to <b>claim</b> them (tap twice = instant).<br>🏗️ Tap your tiles to <b>build</b> farms, mines, markets, labs…<br>🔬 Research techs to advance 9 eras, Stone → Space.<br>⚔️ Train an army and <b>attack</b> rivals. Capture every capital to win the world.<br>👑 Found a Dynasty for Legacy. 🌟 Ascend after conquest.<br>🎁 Tap gift boxes for loot!</p><button class="g" onclick="closeModal()">Start ruling</button>`),300)}else setTimeout(offline,200);
-ensureDaily();centerCam(true);calcRates();renderTop();requestAnimationFrame(frame);setInterval(ensureDaily,60000);
-window.__hd={get S(){return S},G,claim,build,train,research,attack,attackable,dynasty,ascend,nextWorld,legacyGain,starGain,owned,armyPow,siegePow,tileDef,T,nbrs,ROLES,step,RATE,get FPS(){return FPS},openSheet,closeSheet,tap,cam,hx,hy,adjOwn,claimCost,buildCost,can,BLD,techOk,techCost,unitCost,w2s,newRun};
+S.auto=Object.assign({on:0,b:1,c:1,r:1,a:1,res:10},S.auto||{});$('autoBtn').classList.toggle('on',!!S.auto.on);ensureDaily();centerCam(true);calcRates();renderTop();requestAnimationFrame(frame);setInterval(ensureDaily,60000);
+window.__hd={get S(){return S},G,claim,build,train,research,attack,attackable,dynasty,ascend,nextWorld,legacyGain,starGain,owned,armyPow,siegePow,tileDef,T,nbrs,ROLES,step,RATE,get FPS(){return FPS},openSheet,closeSheet,tap,cam,hx,hy,adjOwn,claimCost,buildCost,can,BLD,techOk,techCost,unitCost,w2s,newRun,autoStep,bottleneck};
 </script></body></html>
