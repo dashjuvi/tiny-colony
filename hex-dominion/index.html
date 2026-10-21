@@ -72,7 +72,7 @@ table{width:100%;font-size:11.5px;border-collapse:collapse}td{padding:3px 2px;bo
 <div id="modal"><div class="box glass" id="mbox"></div></div>
 <script>
 "use strict";
-const VER='1.2';
+const VER='1.3';
 const $=id=>document.getElementById(id);
 const cv=$('cv'),cx=cv.getContext('2d');
 let W=0,H=0,DPR=1;
@@ -91,6 +91,7 @@ mine:{n:'Mine',ic:'⛏️',r:{stone:2.5,gold:.6},ok:['mountain','snow','desert']
 market:{n:'Market',ic:'🏪',r:{gold:3},ok:['grass','desert','water','forest','snow','mountain'],bonus:{desert:1.4,water:1.3},cost:{wood:15,stone:8}},
 lab:{n:'Laboratory',ic:'🧪',r:{sci:1.6},ok:['grass','desert','snow','mountain','forest','water'],bonus:{snow:1.5},cost:{wood:20,stone:15,gold:20}},
 barracks:{n:'Barracks',ic:'🛡️',r:{},ok:['grass','desert','forest','snow','mountain'],bonus:{},cost:{wood:30,stone:30,gold:20},desc:'+8% army & defense/lvl'},
+fort:{n:'Fort',ic:'🏯',r:{},ok:['grass','desert','forest','snow','mountain'],bonus:{},cost:{stone:40,wood:15,gold:15},desc:'+40% defense here & adjacent/lvl'},
 wonder:{n:'Wonder',ic:'🏛️',r:{},ok:['grass','desert','snow','mountain','forest'],bonus:{},cost:{wood:3000,stone:3000,gold:5000,sci:800},desc:'×1.25 all production'}
 };
 const WNAME=['Great Menhir','Ziggurat','Colossus','Grand Cathedral','Observatory','Iron Exchange','Skyspire','Neural Core','Orbital Ring'];
@@ -133,7 +134,7 @@ const QPOOL=[['claims','Claim {n} tiles',12],['builds','Build or upgrade {n} tim
 let S,G={tiles:[],map:new Map(),R:9,battles:[],parts:[],floats:[],chests:[],sel:null,dirty:true};
 function fresh(){return{v:1,res:{food:0,wood:0,stone:0,gold:60,sci:0},era:0,tech:{},army:{m:0,r:0,c:0,s:0},trained:{m:0,r:0,c:0,s:0},legacy:0,perks:{},stars:0,aperks:{},
 ml:1,seed:(Math.random()*1e9)|0,tiles:null,ais:null,rt:0,splits:[],lb:[],st:{claims:0,builds:0,wins:0,caps:0,research:0,dyn:0,asc:0,vic:0,chests:0,wonders:0,train:0},
-runGold:0,runCaps:0,ach:{},daily:null,set:{fx:1,shake:1,snd:0},auto:{on:0,b:1,c:1,r:1,a:1,res:10},last:Date.now(),vicRun:0,wonders:{},nextEv:40,nextChest:8,evs:[],raidT:60}}
+runGold:0,runCaps:0,ach:{},daily:null,set:{fx:1,shake:1,snd:0},auto:{on:0,b:1,c:1,r:1,a:1,m:1,k:1,ag:1,res:10},last:Date.now(),vicRun:0,wonders:{},nextEv:40,nextChest:8,evs:[],raidT:60}}
 const P=k=>S.perks[k]||0, AP=k=>S.aperks[k]||0;
 function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 function vnoise(seed){const r=rng(seed),g={};const h=(x,y)=>{const k=x+','+y;if(g[k]===undefined)g[k]=r();return g[k]};
@@ -196,7 +197,7 @@ function unitCost(R){const m=Math.pow(2.1,S.era)*Math.pow(1.07,S.army[R.k]);cons
 function techCost(e,i){return 50*Math.pow(12,e)*(i===3?2:1)*Math.pow(.9,P('study'))}
 function aiStr(ai){const era=Math.min(8,S.era+ai.bonus+(S.rt>300?.3:0));return 12*Math.pow(2.6,era)*(1+.02*Math.min(ai.t,80))*(1+.35*(S.ml-1))*(1+S.rt/360)}
 function tileDef(t){if(t.o>0){const ai=S.ais[t.o-1];return aiStr(ai)*(t.city===2?30*Math.pow(2,Math.max(0,5-S.era)):t.city?8:.8)}if(t.camp)return 4*Math.pow(2.3,S.era)*(1+.3*(S.ml-1));return 0}
-function playerDef(t){let b=0;for(const n of [t,...nbrs(t)])if(n.o===0&&n.b==='barracks')b+=n.bl;return(armyPow()*.45+2*Math.pow(2.3,S.era))*(1+.15*b)*(t.city===2?4:t.city?2.5:1)}
+function playerDef(t){let b=0,f=0;for(const n of [t,...nbrs(t)])if(n.o===0){if(n.b==='barracks')b+=n.bl;if(n.b==='fort')f+=n.bl}return(armyPow()*.45+2*Math.pow(2.3,S.era))*(1+.15*b)*(1+.4*f)*(t.city===2?4:t.city?2.5:1)}
 function adjOwn(t){return nbrs(t).some(n=>n.o===0)}
 function claim(t,free){if(!t||t.o!==-1||t.camp||!adjOwn(t))return false;if(!free&&!pay(claimCost()))return false;t.o=0;S.st.claims++;qInc('claims');updFog();burst(t,'#7cf',14);sfx('claim');return true}
 function build(t,type){if(!t||t.o!==0||t.city)return false;if(t.b&&t.b!==type)return false;if(!BLD[type].ok.includes(t.t))return false;
@@ -310,6 +311,7 @@ function drawBuilding(c,t,x,y,time){const e=S.era,b=t.b,lv=t.bl,ec=ERAC[e];
  if(b==='farm'){c.fillStyle='#e9c74a';for(let i=0;i<3;i++)c.fillRect(-14+i*10,-2,8,10);c.fillStyle='#b98a2a';for(let i=0;i<3;i++)c.fillRect(-14+i*10,2,8,1.5);if(e>=5){c.fillStyle='#c33';c.fillRect(6,-12,8,8);c.fillStyle='#555';c.fillRect(6,-14,8,2)}else house(c,-4,-8,ec,e)}
  else if(b==='lumber'){c.fillStyle='#8a5a2b';c.fillRect(-12,2,24,5);c.fillRect(-10,-3,20,5);c.fillStyle='#c48a4a';c.beginPath();c.arc(-12,4.5,2.5,0,7);c.arc(12,4.5,2.5,0,7);c.fill();house(c,4,-10,ec,e)}
  else if(b==='quarry'){c.fillStyle='#8f8a84';c.beginPath();c.moveTo(-14,8);c.lineTo(-8,-6);c.lineTo(2,-2);c.lineTo(8,-10);c.lineTo(14,8);c.fill();c.fillStyle='#bdb7ae';c.fillRect(-9,2,7,5);c.fillRect(0,0,6,6);c.fillStyle='#d8d2c8';c.fillRect(-4,-4,5,4);if(e>=5){c.strokeStyle='#e0b020';c.lineWidth=2;c.beginPath();c.moveTo(8,8);c.lineTo(12,-12);c.lineTo(4,-12);c.stroke()}}
+ else if(b==='fort'){c.fillStyle=e>=5?'#6a7080':'#9a9080';c.fillRect(-14,-4,28,12);for(let i=0;i<5;i++)c.fillRect(-14+i*6,-8,4,4);c.fillStyle=e>=5?'#4a5060':'#7a7060';c.fillRect(-5,-14,10,22);c.fillRect(-6,-17,3,3);c.fillRect(-1.5,-17,3,3);c.fillRect(3,-17,3,3);c.fillStyle='#222';c.fillRect(-2.5,2,5,6)}
  else if(b==='mine'){c.fillStyle='#3a2f28';c.beginPath();c.arc(0,4,10,Math.PI,0);c.fill();c.fillStyle='#111';c.beginPath();c.arc(0,5,6,Math.PI,0);c.fill();c.fillStyle='#ffd76a';c.beginPath();c.arc(-9,6,2,0,7);c.arc(9,7,2.2,0,7);c.fill();if(e>=5){c.strokeStyle='#999';c.lineWidth=2;c.beginPath();c.moveTo(-6,-14);c.lineTo(0,-4);c.lineTo(6,-14);c.stroke()}}
  else if(b==='market'){if(e<5){c.fillStyle='#d4a';c.beginPath();c.moveTo(-14,-2);c.lineTo(0,-14);c.lineTo(14,-2);c.fill();c.fillStyle='#f4e2c0';c.fillRect(-11,-2,22,10);c.fillStyle='#ffd76a';c.beginPath();c.arc(0,3,3.5,0,7);c.fill()}else{tower(c,-6,ec,14+Math.min(lv,10),e);tower(c,6,ec,9+Math.min(lv,8),e)}}
  else if(b==='lab'){c.fillStyle='#dde8ff';c.fillRect(-10,-6,20,14);c.fillStyle=e>=6?'#9ef':'#6cf';c.beginPath();c.arc(0,-6,10,Math.PI,0);c.fill();c.fillStyle='rgba(120,220,255,'+(.5+.5*Math.sin(time*3+t.ph))+')';c.beginPath();c.arc(0,-9,3,0,7);c.fill()}
@@ -367,19 +369,38 @@ function autoStep(){const A=S.auto;let did=0;
  if(A.r){for(let i=0;i<4;i++)if(techOk(S.era,i)&&S.res.sci>=techCost(S.era,i)&&research(S.era,i)){tk('Researched '+(i===3?ERAS[S.era]+' Era':techName(S.era,i)));did++;break}}
  const bn=bottleneck();const w={};for(const k of RES)w[k]=(k===bn?4:1)/(RATE[k]+1);
  if(A.b){let best=null,bs=0;
-  for(const t of G.tiles){if(t.o!==0||t.city)continue;const opts=t.b?(t.b==='wonder'||t.b==='barracks'?[]:[t.b]):Object.keys(BLD).filter(k=>BLD[k].ok.includes(t.t)&&k!=='wonder'&&k!=='barracks');
+  for(const t of G.tiles){if(t.o!==0||t.city)continue;const opts=t.b?(t.b==='wonder'||t.b==='barracks'||t.b==='fort'?[]:[t.b]):Object.keys(BLD).filter(k=>BLD[k].ok.includes(t.t)&&k!=='wonder'&&k!=='barracks'&&k!=='fort');
    for(const k of opts){const B=BLD[k],L=t.b?t.bl:0,c=buildCost(t,k);if(!okRes(c))continue;const gl=lvF(L+1)-lvF(L);let g=0;for(const r in B.r)g+=B.r[r]*(B.bonus[t.t]||1)*MULT[r]*gl*w[r];
     let cv=0;for(const r in c)cv+=c[r]/(RATE[r]+1);const sc=g/(cv+1);if(sc>bs){bs=sc;best=[t,k]}}}
   if(!S.wonders[S.era]){for(const t of G.tiles)if(t.o===0&&!t.b&&!t.city&&BLD.wonder.ok.includes(t.t)){const c=buildCost(t,'wonder');if(okRes(c)){best=[t,'wonder'];break}}}
   if(best){const [t,k]=best;const up=!!t.b;if(build(t,k)){tk((up?'Upgraded ':'Built ')+BLD[k].n+(up?' Lv'+t.bl:'')+' ('+RIC[bn]+' focus)');did++}}}
  if(A.c){const c=claimCost();if(okRes(c)){let best=null,bs=-1;for(const t of G.tiles)if(t.o===-1&&!t.camp&&adjOwn(t)){const y=TER[t.t].y;let sc=.01;for(const k in y)sc+=y[k]*(k===bn?4:1);if(sc>bs){bs=sc;best=t}}if(best&&claim(best)){tk('Claimed '+TER[best.t].n);did++}}}
- if(A.a){let thr=0;for(const t of G.tiles)if(t.o===0)for(const n of nbrs(t))if(n.o>0&&S.ais[n.o-1].alive)thr=Math.max(thr,aiStr(S.ais[n.o-1]));
-  if(thr&&armyPow()*.45<thr*.8){const R=ROLES.slice(0,3).sort((a,b)=>Object.values(unitCost(a)).reduce((x,y)=>x+y)/a.p-Object.values(unitCost(b)).reduce((x,y)=>x+y)/b.p)[0];if(okRes(unitCost(R))&&train(R,1)){tk('Trained '+R.n[S.era]+' (raid threat)');did++}}}
+ did+=autoMil();
+ return did}
+
+function threat(){let thr=0;for(const t of G.tiles)if(t.o===0)for(const n of nbrs(t))if(n.o>0&&S.ais[n.o-1].alive)thr=Math.max(thr,aiStr(S.ais[n.o-1]));return thr}
+function cval(c){let v=0;for(const r in c)v+=c[r]/(RATE[r]+1);return v}
+function attackTargets(){const c=[];for(const t of G.tiles)if(attackable(t)&&!G.battles.some(b=>b.to===t)){const d=tileDef(t);const pr=t.camp?0:t.city===2?3:t.city?2:1;c.push({t,d,pr})}return c.sort((a,b)=>a.d-b.d)}
+function autoMil(){const A=S.auto;let did=0;const ag=A.ag??1;const margin=[2.2,1.6,1.2][ag],atkM=[1.6,1.25,1.05][ag];
+ const thr=threat();const tg=attackTargets();const next=tg[0];const needCity=next&&next.t.city;
+ const target=Math.max(thr*margin*.9,next&&A.k?next.d*atkM:0);
+ const cur=needCity?siegePow():armyPow();
+ // train
+ if(A.m||A.a){let n=0;while(n<25&&(needCity?siegePow():armyPow())<target){let best=null,bs=0;for(const R of ROLES){const c=unitCost(R);if(!okRes(c))continue;const pw=R.p*(needCity&&R.siege?R.siege:1);const sc=pw/(cval(c)+.01);if(sc>bs){bs=sc;best=R}}if(!best||!train(best,1))break;n++}
+  if(n){tk('Trained '+n+' units ⚔️'+fmt(armyPow())+(needCity?' (siege)':''));did++}}
+ // barracks
+ if(A.m&&cur<target){let best=null,bc=1e300;for(const t of G.tiles){if(t.o!==0||t.city)continue;if(t.b==='barracks'||(!t.b&&BLD.barracks.ok.includes(t.t)&&t.t!=='water'&&nbrs(t).every(n=>n.o===0)&&G.tiles.filter(x=>x.o===0&&x.b==='barracks').length<3+S.era)){const c=buildCost(t,'barracks');if(!okRes(c))continue;const v=cval(c);if(v<bc){bc=v;best=t}}}
+  if(best&&bc<120&&build(best,'barracks')){tk('🛡️ Barracks Lv'+best.bl);did++}}
+ // forts on threatened border
+ if(A.a&&thr){let best=null,bg=-1;for(const t of G.tiles){if(t.o!==0||t.city||t.t==='water')continue;const enemy=nbrs(t).filter(n=>n.o>0).length;if(!enemy)continue;if(t.b&&t.b!=='fort')continue;const pd=playerDef(t);if(pd>thr*1.1)continue;const g=enemy*thr/(pd+1);if(g>bg){bg=g;best=t}}
+  if(best){const c=buildCost(best,'fort');if(okRes(c)&&cval(c)<90&&build(best,'fort')){tk('🏯 Fort Lv'+best.bl+' on border');did++}}}
+ // attack
+ if(A.k&&!G.battles.some(b=>b.att===0)){for(const o of tg){const p=o.t.city?siegePow():armyPow();if(o.t.city===2&&ag<2&&p<o.d*atkM*1.3)continue;if(p>=o.d*atkM){if(attack(o.t)){tk('⚔️ Attacking '+(o.t.camp?'camp':o.t.city===2?'capital':o.t.city?'city':'tile')+' ('+Math.round(Math.min(99,50+50*(1-o.d/p)))+'% odds)');did++}break}}}
  return did}
 window.toggleAuto=()=>{S.auto.on^=1;$('autoBtn').classList.toggle('on',!!S.auto.on);tk(S.auto.on?'Auto ON':'Auto OFF');save()};
 window.optimise=()=>{let n=0;for(let i=0;i<40;i++){const d=autoStep();n+=d;if(!d)break}toast('⚡ Optimised: '+n+' actions');renderTop()};
 window.autoSettings=()=>{const A=S.auto;const tg=(k,l)=>`<div class="row"><div class="tx"><b>${l}</b></div><button class="${A[k]?'g':''}" onclick="S.auto.${k}^=1;autoSettings()">${A[k]?'On':'Off'}</button></div>`;
- modal(`<h2>🤖 Auto settings</h2>${tg('b','Build & upgrade')}${tg('c','Claim tiles')}${tg('r','Research')}${tg('a','Train defenders vs raids')}<div class="row"><div class="tx"><b>Reserve ${A.res}%</b>Keep this share of each resource unspent</div><input type="range" min="0" max="50" step="5" value="${A.res}" oninput="S.auto.res=+this.value;this.parentNode.querySelector('b').textContent='Reserve '+this.value+'%'"></div><div style="font-size:11px;color:#9ab;margin:6px 0">Speed: every ${autoInt().toFixed(2)}s. Surveyors & Master Builders Legacy perks make it faster.</div><button class="g" onclick="closeModal();save()">Done</button>`)};
+ modal(`<h2>🤖 Auto settings</h2>${tg('b','Build & upgrade')}${tg('c','Claim tiles')}${tg('r','Research')}${tg('a','Defend: forts & defenders')}${tg('m','Military build (barracks, units)')}${tg('k','Attack')}<div class="row" style="flex-wrap:wrap"><div class="tx" style="flex-basis:100%"><b>Aggression</b></div>${['Cautious','Balanced','Aggressive'].map((n,i)=>`<button class="${(A.ag??1)===i?'r':''}" onclick="S.auto.ag=${i};autoSettings()">${n}</button>`).join('')}</div><div class="row"><div class="tx"><b>Reserve ${A.res}%</b>Keep this share of each resource unspent</div><input type="range" min="0" max="50" step="5" value="${A.res}" oninput="S.auto.res=+this.value;this.parentNode.querySelector('b').textContent='Reserve '+this.value+'%'"></div><div style="font-size:11px;color:#9ab;margin:6px 0">Speed: every ${autoInt().toFixed(2)}s. Surveyors & Master Builders Legacy perks make it faster.</div><button class="g" onclick="closeModal();save()">Done</button>`)};
 function autoInt(){return Math.max(.35,1-.07*(P('auto')+P('build')))}
 function autoClaim(){if(!can(claimCost()))return;for(const t of G.tiles)if(t.o===-1&&!t.camp&&t.t!=='water'&&adjOwn(t)){claim(t);return}}
 function autoBuild(){let best=null,bc=1e300;for(const t of G.tiles)if(t.o===0&&t.b&&t.b!=='wonder'){const c=buildCost(t,t.b);if(!can(c))continue;const v=Object.values(c).reduce((a,b)=>a+b,0);if(v<bc){bc=v;best=t}}if(best)build(best,best.b)}
@@ -486,6 +507,6 @@ function offline(){const dt=Math.min(8*3600,(Date.now()-S.last)/1000);S.last=Dat
  modal(`<div style="font-size:44px">🌙</div><h2>Welcome back!</h2><p>Away ${fmtT(dt)}. Your realm produced (${Math.round(eff*100)}%):</p><p>${RES.map(k=>RIC[k]+' '+fmt(got[k])).join('<br>')}</p><button class="g" onclick="closeModal()">Collect</button>`)}
 S=fresh();
 if(!load()){genMap();loadTiles();setTimeout(()=>modal(`<div style="font-size:50px">⬡👑</div><h2>Hex Dominion</h2><p style="font-size:13.5px;text-align:left">🚩 Tap glowing tiles next to your border to <b>claim</b> them (tap twice = instant).<br>🏗️ Tap your tiles to <b>build</b> farms, mines, markets, labs…<br>🔬 Research techs to advance 9 eras, Stone → Space.<br>⚔️ Train an army and <b>attack</b> rivals. Capture every capital to win the world.<br>👑 Found a Dynasty for Legacy. 🌟 Ascend after conquest.<br>🎁 Tap gift boxes for loot!</p><button class="g" onclick="closeModal()">Start ruling</button>`),300)}else setTimeout(offline,200);
-S.auto=Object.assign({on:0,b:1,c:1,r:1,a:1,res:10},S.auto||{});$('autoBtn').classList.toggle('on',!!S.auto.on);ensureDaily();centerCam(true);calcRates();renderTop();requestAnimationFrame(frame);setInterval(ensureDaily,60000);
-window.__hd={get S(){return S},G,claim,build,train,research,attack,attackable,dynasty,ascend,nextWorld,legacyGain,starGain,owned,armyPow,siegePow,tileDef,T,nbrs,ROLES,step,RATE,get FPS(){return FPS},openSheet,closeSheet,tap,cam,hx,hy,adjOwn,claimCost,buildCost,can,BLD,techOk,techCost,unitCost,w2s,newRun,autoStep,bottleneck};
+S.auto=Object.assign({on:0,b:1,c:1,r:1,a:1,m:1,k:1,ag:1,res:10},S.auto||{});$('autoBtn').classList.toggle('on',!!S.auto.on);ensureDaily();centerCam(true);calcRates();renderTop();requestAnimationFrame(frame);setInterval(ensureDaily,60000);
+window.__hd={get S(){return S},G,claim,build,train,research,attack,attackable,dynasty,ascend,nextWorld,legacyGain,starGain,owned,armyPow,siegePow,tileDef,T,nbrs,ROLES,step,RATE,get FPS(){return FPS},openSheet,closeSheet,tap,cam,hx,hy,adjOwn,claimCost,buildCost,can,BLD,techOk,techCost,unitCost,w2s,newRun,autoStep,bottleneck,threat};
 </script></body></html>
