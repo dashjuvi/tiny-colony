@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Hex Dominion">
+<meta name="theme-color" content="#0b1424"><title>Hex Dominion</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1424;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;color:#eef3ff;touch-action:none}
+#cv{position:fixed;inset:0;width:100%;height:100%}
+.glass{background:rgba(16,26,46,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+#top{position:fixed;left:6px;right:6px;top:calc(env(safe-area-inset-top) + 6px);border-radius:16px;padding:6px 6px 4px}
+#res{display:flex;gap:4px}
+.chip{flex:1;min-width:0;background:rgba(255,255,255,.06);border-radius:10px;padding:3px 4px;text-align:center}
+.chip b{display:block;font-size:13px;white-space:nowrap;overflow:hidden}
+.chip i{font-style:normal;font-size:9.5px;color:#9fe6a8;display:block;white-space:nowrap}
+#bar2{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-top:4px;padding:0 4px}
+#era{font-weight:800;background:linear-gradient(90deg,#ffd76a,#ff9f43);-webkit-background-clip:text;background-clip:text;color:transparent}
+#timer{font-variant-numeric:tabular-nums;color:#9cd1ff}
+#panel{position:fixed;left:6px;right:6px;bottom:calc(env(safe-area-inset-bottom) + 64px);border-radius:16px;padding:9px;display:none;max-height:46vh;overflow-y:auto}
+#panel h3{margin:0 0 3px;font-size:15px}
+#panel .sub{font-size:11.5px;color:#b8c4dc;margin-bottom:6px}
+.btns{display:flex;flex-wrap:wrap;gap:5px}
+button{font:inherit;color:#fff;border:0;border-radius:11px;padding:8px 9px;font-size:12.5px;font-weight:700;background:linear-gradient(180deg,#3c7cff,#2753c9);box-shadow:0 2px 0 #1b3786,inset 0 1px 0 rgba(255,255,255,.3)}
+button:active{transform:translateY(1px)}
+button.g{background:linear-gradient(180deg,#38c172,#218a4f);box-shadow:0 2px 0 #145c33}
+button.r{background:linear-gradient(180deg,#ff5a5a,#c22c2c);box-shadow:0 2px 0 #7d1717}
+button.o{background:linear-gradient(180deg,#ffb23c,#d97a10);box-shadow:0 2px 0 #8a4c06}
+button.p{background:linear-gradient(180deg,#a96bff,#6b37d1);box-shadow:0 2px 0 #44208a}
+button:disabled{opacity:.42;filter:grayscale(.6)}
+button small{display:block;font-weight:500;font-size:10px;opacity:.9}
+#tabs{position:fixed;left:6px;right:6px;bottom:calc(env(safe-area-inset-bottom) + 6px);border-radius:16px;display:flex;padding:4px;gap:4px}
+#tabs div{flex:1;text-align:center;font-size:11px;padding:4px 0;border-radius:11px;font-weight:700;position:relative}
+#tabs div span{display:block;font-size:19px}
+#tabs div.on{background:rgba(255,255,255,.13)}
+#tabs div .dot{position:absolute;top:2px;right:12px;width:8px;height:8px;border-radius:50%;background:#ff4d4d;display:none}
+#sheet{position:fixed;left:6px;right:6px;top:calc(env(safe-area-inset-top) + 92px);bottom:calc(env(safe-area-inset-bottom) + 64px);border-radius:18px;padding:10px;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#sheet h2{margin:2px 0 8px;font-size:18px}
+.row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border-radius:12px;padding:7px;margin-bottom:6px}
+.row .ic{font-size:24px;width:34px;text-align:center}
+.row .tx{flex:1;min-width:0;font-size:12px;color:#c5d0e6}
+.row .tx b{color:#fff;font-size:13.5px;display:block}
+.seg{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+.seg div{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.07);font-size:12px;font-weight:700}
+.seg div.on{background:#3c7cff}
+.prog{height:6px;border-radius:4px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:4px}.prog i{display:block;height:100%;background:linear-gradient(90deg,#38c172,#9cf06f)}
+#toasts{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 96px);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.toast{padding:7px 12px;border-radius:12px;font-size:12.5px;font-weight:700;animation:tin .25s ease-out}
+@keyframes tin{from{transform:translateY(-10px);opacity:0}}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px}
+#modal .box{border-radius:20px;padding:16px;max-width:360px;width:100%;text-align:center;max-height:80vh;overflow:auto}
+#modal h2{margin:0 0 8px}
+#evb{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 94px);font-size:12px;padding:4px 10px;border-radius:12px;display:none;color:#ffe08a;font-weight:700;white-space:nowrap}
+table{width:100%;font-size:11.5px;border-collapse:collapse}td{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.07)}
+.gn{color:#6dff9a}.rd{color:#ff7b7b}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="top" class="glass"><div id="res"></div><div id="bar2"><span id="era"></span><span id="mapl"></span><span id="army"></span><span id="timer"></span></div></div>
+<div id="evb" class="glass"></div>
+<div id="toasts"></div>
+<div id="panel" class="glass"></div>
+<div id="sheet" class="glass"></div>
+<div id="tabs" class="glass">
+<div data-t="map" class="on"><span>🗺️</span>Map</div><div data-t="army"><span>⚔️</span>Army</div><div data-t="tech"><span>🔬</span>Tech<i class="dot"></i></div><div data-t="dyn"><span>👑</span>Dynasty<i class="dot"></i></div><div data-t="more"><span>⭐</span>More<i class="dot"></i></div>
+</div>
+<div id="modal"><div class="box glass" id="mbox"></div></div>
+<script>
+"use strict";
+const VER='1.0';
+const $=id=>document.getElementById(id);
+const cv=$('cv'),cx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;}
+addEventListener('resize',resize);resize();
+const RES=['food','wood','stone','gold','sci'];
+const RIC={food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',sci:'🔬'};
+const ERAS=['Stone','Bronze','Iron','Medieval','Renaissance','Industrial','Modern','Information','Space'];
+const ERAC=['#a88a5c','#d08a3c','#8c9aa8','#7a5ad6','#d64a6a','#5a6470','#3aa0d8','#24d6c0','#b06bff'];
+const TER={grass:{n:'Grassland',c1:'#7fd65a',c2:'#3f9a3a',y:{food:.4,gold:.1}},forest:{n:'Forest',c1:'#3f9a4a',c2:'#1d5e2e',y:{wood:.5}},mountain:{n:'Mountain',c1:'#a7a49c',c2:'#5d5a55',y:{stone:.4,gold:.15}},desert:{n:'Desert',c1:'#f1d48a',c2:'#c79a4c',y:{gold:.35}},snow:{n:'Tundra',c1:'#f4f8ff',c2:'#a9bfd6',y:{stone:.2,sci:.1}},water:{n:'Sea',c1:'#3aa6e0',c2:'#14548f',y:{food:.3,gold:.2}}};
+const BLD={
+farm:{n:'Farm',ic:'🌾',r:{food:3},ok:['grass','desert','water'],bonus:{grass:1.5,water:1.2,desert:.7},cost:{wood:12,gold:8}},
+lumber:{n:'Lumber Camp',ic:'🪓',r:{wood:3},ok:['forest','snow'],bonus:{forest:1.6},cost:{gold:12,food:8}},
+mine:{n:'Mine',ic:'⛏️',r:{stone:2.5,gold:.6},ok:['mountain','snow','desert'],bonus:{mountain:1.6},cost:{wood:20,food:10}},
+market:{n:'Market',ic:'🏪',r:{gold:3},ok:['grass','desert','water','forest','snow','mountain'],bonus:{desert:1.4,water:1.3},cost:{wood:15,stone:8}},
+lab:{n:'Laboratory',ic:'🧪',r:{sci:1.6},ok:['grass','desert','snow','mountain','forest','water'],bonus:{snow:1.5},cost:{wood:20,stone:15,gold:20}},
+barracks:{n:'Barracks',ic:'🛡️',r:{},ok:['grass','desert','forest','snow','mountain'],bonus:{},cost:{wood:30,stone:30,gold:20},desc:'+8% army & defense/lvl'},
+wonder:{n:'Wonder',ic:'🏛️',r:{},ok:['grass','desert','snow','mountain','forest'],bonus:{},cost:{wood:3000,stone:3000,gold:5000,sci:800},desc:'×1.25 all production'}
+};
+const WNAME=['Great Menhir','Ziggurat','Colossus','Grand Cathedral','Observatory','Iron Exchange','Skyspire','Neural Core','Orbital Ring'];
+const ROLES=[
+{k:'m',n:['Club Warrior','Bronze Spear','Legionary','Knight','Pikeman','Rifleman','Infantry','Cyber Trooper','Star Marine'],p:1,cost:{food:10,gold:12},ic:['🪓','🗡️','⚔️','🛡️','🔱','🔫','🪖','🤖','👨‍🚀']},
+{k:'r',n:['Slinger','Archer','Crossbow','Longbow','Musketeer','Gatling','Rocket Team','Drone Op','Plasma Lancer'],p:1.3,cost:{food:12,wood:8,gold:16},ic:['🪨','🏹','🏹','🎯','💥','🔫','🚀','🛸','⚡']},
+{k:'c',n:['Wolf Rider','Chariot','Horseman','Cavalier','Dragoon','Armored Car','Tank','Mech','Hover Tank'],p:2.4,cost:{food:30,gold:45},ic:['🐺','🐎','🐎','🏇','🏇','🚙','🛡️','🦾','🛰️']},
+{k:'s',n:['Rock Thrower','Ram','Catapult','Trebuchet','Cannon','Artillery','Missile','Railgun','Starship'],p:2,siege:3.5,cost:{wood:35,stone:20,gold:50},ic:['🪨','🪵','☄️','🏰','💣','💣','🚀','⚡','🚀']}];
+const PERKS=[
+{k:'fert',n:'Fertile Lands',d:'+40% food/wood/stone',ic:'🌾',c:1,g:1.6,max:50},
+{k:'tres',n:'Royal Treasury',d:'+40% gold',ic:'🪙',c:1,g:1.6,max:50},
+{k:'schol',n:'Scholars',d:'+40% science',ic:'📜',c:2,g:1.6,max:50},
+{k:'war',n:'Warlords',d:'+35% army power',ic:'⚔️',c:2,g:1.6,max:50},
+{k:'cheap',n:'Cartographers',d:'-8% claim cost',ic:'🧭',c:2,g:1.8,max:8},
+{k:'head',n:'Head Start',d:'Start with +1 ring of tiles',ic:'🏁',c:4,g:3,max:3},
+{k:'start',n:'Inheritance',d:'Start with bonus resources',ic:'💰',c:2,g:1.7,max:20},
+{k:'study',n:'Quick Study',d:'-10% tech cost',ic:'🧠',c:3,g:1.8,max:8},
+{k:'auto',n:'Surveyors',d:'Auto-claim tiles (faster per lvl)',ic:'🤖',c:5,g:2.2,max:5},
+{k:'build',n:'Master Builders',d:'Auto-upgrade cheapest building',ic:'🏗️',c:6,g:2.2,max:5},
+{k:'offl',n:'Stewards',d:'+15% offline earnings',ic:'🌙',c:2,g:1.7,max:6},
+{k:'siege',n:'Siegecraft',d:'+30% vs cities, +25% loot',ic:'🏰',c:3,g:1.7,max:20},
+{k:'diplo',n:'Diplomacy',d:'Rivals raid 12% less often',ic:'🕊️',c:3,g:1.9,max:5},
+{k:'gold',n:'Golden Age',d:'Events & gifts 15% more often',ic:'✨',c:3,g:1.9,max:5},
+{k:'herit',n:'Heritage',d:'Start one era further',ic:'🏺',c:15,g:4,max:4},
+{k:'leg',n:'Bloodline',d:'+20% Legacy gained',ic:'🩸',c:4,g:1.8,max:20}];
+const APERKS=[
+{k:'cosm',n:'Cosmic Yield',d:'×2 all production',ic:'🌌',c:1,g:2,max:30},
+{k:'titan',n:'Titan Armies',d:'×2 army power',ic:'🦾',c:1,g:2,max:30},
+{k:'time',n:'Time Dilation',d:'+20% game speed',ic:'⏳',c:2,g:2.5,max:5},
+{k:'ancient',n:'Ancient Knowledge',d:'Auto-research techs',ic:'📡',c:3,g:3,max:1},
+{k:'leg2',n:'Eternal Line',d:'×1.5 Legacy gain',ic:'♾️',c:2,g:2,max:20},
+{k:'warp',n:'Warp Start',d:'Start Dynasties 2 eras ahead',ic:'🚀',c:5,g:4,max:2}];
+const ACH=[['claim10','Settler','Own 10 tiles',()=>owned()>=10],['claim40','Realm','Own 40 tiles',()=>owned()>=40],['claim100','Empire','Own 100 tiles',()=>owned()>=100],
+['b10','Builder','Build 10 times',()=>S.st.builds>=10],['b100','Architect','Do 100 builds/upgrades',()=>S.st.builds>=100],
+['w1','First Blood','Win a battle',()=>S.st.wins>=1],['w25','Warlord','Win 25 battles',()=>S.st.wins>=25],['cap1','Conqueror','Capture a city',()=>S.st.caps>=1],['cap10','Kingmaker','Capture 10 cities',()=>S.st.caps>=10],
+['e3','Iron Will','Reach Iron era',()=>S.era>=2],['e5','Rebirth','Reach Renaissance',()=>S.era>=4],['e7','Gears','Reach Modern era',()=>S.era>=6],['e9','Stargazer','Reach Space era',()=>S.era>=8],
+['dyn1','New Dynasty','Found a Dynasty',()=>S.st.dyn>=1],['dyn10','Old Blood','10 Dynasties',()=>S.st.dyn>=10],['vic','World Ruler','Conquer a world',()=>S.st.vic>=1],['vic5','Multiworld','Conquer 5 worlds',()=>S.st.vic>=5],
+['asc','Ascended','Ascend once',()=>S.st.asc>=1],['chest25','Treasure Hunter','Open 25 gifts',()=>S.st.chests>=25],['won','Wondrous','Build 3 wonders',()=>S.st.wonders>=3],['speed','Speedrunner','Conquer a world in under 40 min',()=>S.lb.some(r=>r.t<2400)]];
+const QPOOL=[['claims','Claim {n} tiles',12],['builds','Build or upgrade {n} times',15],['wins','Win {n} battles',5],['research','Research {n} techs',4],['chests','Open {n} gifts',5],['caps','Capture {n} city',1],['train','Train {n} units',30]];
+let S,G={tiles:[],map:new Map(),R:9,battles:[],parts:[],floats:[],chests:[],sel:null,dirty:true};
+function fresh(){return{v:1,res:{food:0,wood:0,stone:0,gold:60,sci:0},era:0,tech:{},army:{m:0,r:0,c:0,s:0},trained:{m:0,r:0,c:0,s:0},legacy:0,perks:{},stars:0,aperks:{},
+ml:1,seed:(Math.random()*1e9)|0,tiles:null,ais:null,rt:0,splits:[],lb:[],st:{claims:0,builds:0,wins:0,caps:0,research:0,dyn:0,asc:0,vic:0,chests:0,wonders:0,train:0},
+runGold:0,runCaps:0,ach:{},daily:null,set:{fx:1,shake:1,snd:0},last:Date.now(),vicRun:0,wonders:{},nextEv:40,nextChest:8,evs:[],raidT:60}}
+const P=k=>S.perks[k]||0, AP=k=>S.aperks[k]||0;
+function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+function vnoise(seed){const r=rng(seed),g={};const h=(x,y)=>{const k=x+','+y;if(g[k]===undefined)g[k]=r();return g[k]};
+ const sm=t=>t*t*(3-2*t);return(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=sm(x-xi),yf=sm(y-yi);const a=h(xi,yi),b=h(xi+1,yi),c=h(xi,yi+1),d=h(xi+1,yi+1);return a+(b-a)*xf+(c-a)*yf+(a-b-c+d)*xf*yf}}
+const SZ=30,SQ3=Math.sqrt(3),DIRS=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const hx=(q,r)=>SZ*SQ3*(q+r/2),hy=(q,r)=>SZ*1.5*r;
+const key=(q,r)=>q+','+r;
+const T=(q,r)=>G.map.get(key(q,r));
+const nbrs=t=>DIRS.map(d=>T(t.q+d[0],t.r+d[1])).filter(Boolean);
+const hdist=(a,b)=>(Math.abs(a.q-b.q)+Math.abs(a.r-b.r)+Math.abs(a.q+a.r-b.q-b.r))/2;
+const FCOL=['#3c8cff','#ff4d4d','#ffb020','#b44dff','#2fd6a0','#ff6ad5'];
+const FNAME=['You','Crimson Horde','Amber Khanate','Violet Throne','Jade Republic','Rose Dominion'];
+function genMap(){
+ const R=Math.min(13,8+S.ml);G.R=R;const r=rng(S.seed),n1=vnoise(S.seed+1),n2=vnoise(S.seed+2);
+ const tiles=[];
+ for(let q=-R;q<=R;q++)for(let rr=Math.max(-R,-q-R);rr<=Math.min(R,-q+R);rr++){
+  const x=hx(q,rr)/SZ,y=hy(q,rr)/SZ;const d=Math.max(Math.abs(q),Math.abs(rr),Math.abs(q+rr))/R;
+  let h=n1(x*.22,y*.22)*.65+n1(x*.5+9,y*.5)*.35-Math.pow(d,3)*.55+.12;const m=n2(x*.3,y*.3);const lat=Math.abs(y)/(R*1.5);
+  let t;if(h<.34)t='water';else if(h>.72)t='mountain';else if(lat>.78)t='snow';else if(m>.6)t='forest';else if(m<.3&&lat<.5)t='desert';else t='grass';
+  tiles.push({q,r:rr,t,o:-1,b:null,bl:0,city:0,seen:0,camp:0});}
+ const land=tiles.filter(t=>t.t!=='water'&&hdist(t,{q:0,r:0})<R-1);
+ const nAI=Math.min(5,3+Math.floor((S.ml-1)/2));
+ const home={q:0,r:Math.floor(R*.45)};const pick=[land.reduce((b,t)=>hdist(t,home)<hdist(b,home)?t:b,land[0])];
+ for(let i=0;i<nAI;i++){let best=null,bd=-1;for(let k=0;k<120;k++){const c=land[(r()*land.length)|0];const md=Math.min(...pick.map(p=>hdist(p,c)));if(md>bd){bd=md;best=c}}pick.push(best)}
+ S.ais=[];const mm=new Map(tiles.map(t=>[key(t.q,t.r),t]));
+ pick.forEach((c,i)=>{c.o=i;c.city=2;if(i>0){S.ais.push({id:i,alive:1,cities:1,t:0,bonus:.2+r()*.8});
+  DIRS.forEach(d=>{const n=mm.get(key(c.q+d[0],c.r+d[1]));if(n&&n.o<0)n.o=i})}});
+ for(let i=0;i<6+S.ml;i++){const c=land[(r()*land.length)|0];if(c.o<0&&hdist(c,pick[0])>1)c.camp=1}
+ S.tiles=tiles.map(t=>[t.q,t.r,t.t,t.o,t.b,t.bl,t.city,t.seen,t.camp]);S.cap=[pick[0].q,pick[0].r];}
+function loadTiles(){G.tiles=S.tiles.map(a=>({q:a[0],r:a[1],t:a[2],o:a[3],b:a[4],bl:a[5],city:a[6],seen:a[7],camp:a[8],ph:Math.random()*6}));G.map=new Map(G.tiles.map(t=>[key(t.q,t.r),t]));
+ G.R=Math.max(...G.tiles.map(t=>Math.abs(t.q)));updFog();}
+function packTiles(){S.tiles=G.tiles.map(t=>[t.q,t.r,t.t,t.o,t.b,t.bl,t.city,t.seen,t.camp])}
+let OWN=0;function owned(){return OWN}
+function updFog(){let n=0;for(const t of G.tiles)if(t.o===0){n++;t.seen=1;for(const a of nbrs(t)){a.seen=1;for(const m of nbrs(a))m.seen=1}}OWN=n;G.dirty=true}
+let RATE={food:0,wood:0,stone:0,gold:0,sci:0},MULT={};
+function evMult(k){let m=1;for(const e of S.evs){if(e.k==='harvest'&&(k==='food'||k==='wood'))m*=3;if(e.k==='golden')m*=2;if(e.k==='eureka'&&k==='sci')m*=3;if(e.k==='rush'&&k==='gold')m*=3;if(e.k==='plague'&&k==='food')m*=.5}return m}
+function tcount(i){let c=0;for(let e=0;e<=S.era;e++)if(S.tech[e+'_'+i])c++;return c}
+function calcRates(){
+ const em=Math.pow(1.45,S.era),wm=Math.pow(1.25,Object.keys(S.wonders).length),am=Math.pow(2,AP('cosm')),leg=1+S.legacy*.02;
+ const e0=1+.35*tcount(0)+.4*P('fert');const base={food:e0,wood:e0,stone:e0,gold:1+.35*tcount(2)+.4*P('tres'),sci:1+.35*tcount(2)+.4*P('schol')};
+ for(const k of RES)MULT[k]=base[k]*em*wm*am*leg*evMult(k);
+ const r={food:0,wood:0,stone:0,gold:0,sci:0};
+ for(const t of G.tiles){if(t.o!==0)continue;const ty=TER[t.t].y;for(const k in ty)r[k]+=ty[k];
+  if(t.city===2){r.food+=3;r.wood+=3;r.stone+=2;r.gold+=4;r.sci+=1}else if(t.city){r.food+=2;r.wood+=2;r.stone+=1;r.gold+=3;r.sci+=.6}
+  if(t.b){const B=BLD[t.b],bn=B.bonus[t.t]||1,lv=t.bl*Math.pow(1.1,t.bl)*Math.pow(1.5,Math.floor(t.bl/10));for(const k in B.r)r[k]+=B.r[k]*bn*lv}}
+ for(const k of RES)RATE[k]=r[k]*MULT[k];}
+function unitMul(){let b=0;for(const t of G.tiles)if(t.o===0&&t.b==='barracks')b+=t.bl;
+ return Math.pow(2.3,S.era)*(1+.08*b)*(1+.35*tcount(1))*(1+.35*P('war'))*Math.pow(2,AP('titan'))*(S.evs.some(e=>e.k==='valor')?2:1)}
+function armyPow(){let p=0;ROLES.forEach(R=>p+=S.army[R.k]*R.p);return p*unitMul()}
+function siegePow(){let p=0;ROLES.forEach(R=>p+=S.army[R.k]*R.p*(R.siege||1));return p*unitMul()*(1+.3*P('siege'))}
+const can=c=>Object.keys(c).every(k=>S.res[k]>=c[k]-1e-9);
+function pay(c){if(!can(c))return false;for(const k in c)S.res[k]-=c[k];return true}
+function costStr(c){return Object.keys(c).map(k=>RIC[k]+fmt(c[k])).join(' ')}
+const SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd','Td'];
+function fmt(n){if(!isFinite(n))return '∞';if(n<0)return '-'+fmt(-n);if(n<10)return n<1&&n>0?n.toFixed(2):(Math.round(n*10)/10).toString();if(n<1000)return Math.floor(n)+'';
+ const e=Math.floor(Math.log10(n)/3);if(e<SUF.length)return(n/Math.pow(1000,e)).toFixed(2).replace(/\.?0+$/,'')+SUF[e];return n.toExponential(2)}
+function claimCost(){return{gold:15*Math.pow(1.13,OWN-1)*Math.pow(.92,P('cheap'))}}
+function buildCost(t,type){const B=BLD[type];const lv=t.b?t.bl:0;const m=Math.pow(1.7,lv)*Math.pow(2.2,S.era)*(type==='wonder'?Math.pow(2,S.era)*4:1);const c={};for(const k in B.cost)c[k]=B.cost[k]*m;return c}
+function unitCost(R){const m=Math.pow(2.1,S.era)*Math.pow(1.07,S.army[R.k]);const c={};for(const k in R.cost)c[k]=R.cost[k]*m;return c}
+function techCost(e,i){return 50*Math.pow(12,e)*(i===3?2:1)*Math.pow(.9,P('study'))}
+function aiStr(ai){const era=Math.min(8,S.era+ai.bonus+(S.rt>300?.3:0));return 12*Math.pow(2.6,era)*(1+.02*Math.min(ai.t,80))*(1+.35*(S.ml-1))*(1+S.rt/360)}
+function tileDef(t){if(t.o>0){const ai=S.ais[t.o-1];return aiStr(ai)*(t.city===2?30*Math.pow(2,Math.max(0,5-S.era)):t.city?8:.8)}if(t.camp)return 4*Math.pow(2.3,S.era)*(1+.3*(S.ml-1));return 0}
+function playerDef(t){let b=0;for(const n of [t,...nbrs(t)])if(n.o===0&&n.b==='barracks')b+=n.bl;return(armyPow()*.45+2*Math.pow(2.3,S.era))*(1+.15*b)*(t.city===2?4:t.city?2.5:1)}
+function adjOwn(t){return nbrs(t).some(n=>n.o===0)}
+function claim(t,free){if(!t||t.o!==-1||t.camp||!adjOwn(t))return false;if(!free&&!pay(claimCost()))return false;t.o=0;S.st.claims++;qInc('claims');updFog();burst(t,'#7cf',14);sfx('claim');return true}
+function build(t,type){if(!t||t.o!==0||t.city)return false;if(t.b&&t.b!==type)return false;if(!BLD[type].ok.includes(t.t))return false;
+ if(type==='wonder'&&(S.wonders[S.era]||t.b))return false;
+ if(!pay(buildCost(t,type)))return false;
+ if(!t.b){t.b=type;t.bl=1}else t.bl++;
+ if(type==='wonder'){S.wonders[S.era]=1;t.wn=S.era;S.st.wonders++;toast('🏛️ '+WNAME[S.era]+' completed! ×1.25 production','#ffd76a');burst(t,'#ffd76a',40)}
+ S.st.builds++;qInc('builds');burst(t,'#ffe08a',10);sfx('build');return true}
+function train(R,n){let k=0;for(let i=0;i<n;i++){if(!pay(unitCost(R)))break;S.army[R.k]++;S.trained[R.k]++;k++}if(k){S.st.train+=k;qInc('train',k);sfx('build')}return k}
+function techOk(e,i){return !S.tech[e+'_'+i]&&e===S.era&&!(i===3&&(e>=8||!(S.tech[e+'_0']&&S.tech[e+'_1']&&S.tech[e+'_2'])))}
+function research(e,i){if(!techOk(e,i)||S.res.sci<techCost(e,i))return false;S.res.sci-=techCost(e,i);S.tech[e+'_'+i]=1;S.st.research++;qInc('research');
+ if(i===3){S.era++;S.splits.push(S.rt);toast('🎉 Entered the '+ERAS[S.era]+' Era!','#ffd76a');G.dirty=true;flash=1;sfx('era')}else toast('🔬 Researched '+techName(e,i));return true}
+function techName(e,i){return i===3?'Advance to '+(ERAS[e+1]||'?'):[['Agriculture','Bronze Tools','Masonry','Guilds','Printing','Steam Power','Electricity','Robotics','Fusion'],['Hunting','Bronze Arms','Iron Forging','Chivalry','Gunpowder','Rifling','Combustion','Drones','Plasma Arms'],['Oral Lore','Writing','Philosophy','Banking','Astronomy','Economics','Computing','Internet','Quantum AI']][i][e]}
+function attackable(t){return t&&t.o!==0&&(t.o>0||t.camp)&&adjOwn(t)}
+function attack(t){if(!attackable(t)||G.battles.some(b=>b.to===t))return false;const p=t.city?siegePow():armyPow();if(p<=0){toast('Train units first! ⚔️','#ff9b9b');return false}
+ startBattle(nbrs(t).find(n=>n.o===0),t,0,t.o>0?t.o:9,p,tileDef(t));return true}
+function startBattle(from,to,att,def,ap,dp){const b={from,to,att,def,ap,dp,ahp:1,dhp:1,t:0,dur:2.2,units:[]};
+ const na=Math.min(9,3+Math.floor(Math.log2(1+ap/Math.pow(2.3,S.era)))),nd=Math.min(9,3+Math.floor(Math.log2(1+dp/Math.pow(2.3,S.era))));
+ for(let i=0;i<na;i++)b.units.push({s:0,o:Math.random()*6.28,r:Math.random()*10,k:i%4});for(let i=0;i<nd;i++)b.units.push({s:1,o:Math.random()*6.28,r:Math.random()*10,k:i%4});
+ G.battles.push(b);sfx('clash')}
+function resolveBattle(b){const win=b.ap>=b.dp;const t=b.to;
+ if(b.att===0){
+  const lossF=win?Math.min(.6,b.dp/b.ap*.5):.4;for(const k in S.army)S.army[k]=Math.floor(S.army[k]*(1-lossF));
+  if(t.o===0)return;
+  if(win){S.st.wins++;qInc('wins');const loot=Math.max(30,RATE.gold*6)*(t.city?4:1)*(1+.25*P('siege'));S.res.gold+=loot;S.runGold+=loot;float(t,'+'+fmt(loot)+'🪙','#ffd76a');
+   if(t.camp){t.camp=0;t.o=0;toast('🏕️ Barbarian camp razed!')}
+   else{const ai=S.ais[t.o-1];if(t.city){S.st.caps++;S.runCaps++;qInc('caps');ai.cities--;toast('🏰 Captured a '+FNAME[ai.id]+' city!','#ffd76a');S.res.sci+=Math.max(20,RATE.sci*30);
+     if(ai.cities<=0){ai.alive=0;for(const x of G.tiles)if(x.o===ai.id)x.o=0;toast('☠️ '+FNAME[ai.id]+' has fallen!','#ff9b9b')}}
+    t.o=0}
+   burst(t,'#fff2a8',30);shake=8;updFog();checkVictory()}else{toast('Attack repelled… train more units','#ff9b9b');float(t,'Defeat','#ff8080')}
+ }else{
+  if(t.o!==0)return;
+  if(win){if(t.city===2){const l=S.res.gold*.1;S.res.gold-=l;toast('🔥 Capital raided! −'+fmt(l)+'🪙','#ff9b9b')}else{t.o=b.att;if(t.b)t.bl=Math.max(1,Math.floor(t.bl/2));if(t.city){t.city=0}toast('⚠️ '+FNAME[b.att]+' seized a tile!','#ff9b9b')}
+   for(const k in S.army)S.army[k]=Math.floor(S.army[k]*.85)}else{float(t,'Defended!','#8fd');S.st.wins++;qInc('wins')}
+  updFog()}
+ sfx(win?'win':'lose')}
+function checkVictory(){if(S.ais.every(a=>!a.alive)&&!S.vicRun){S.vicRun=1;S.st.vic++;const tot=S.rt;S.lb.push({t:tot,sp:S.splits.slice(),ml:S.ml,d:new Date().toLocaleDateString(),e:S.era});S.lb.sort((a,b)=>a.t-b.t);S.lb=S.lb.slice(0,10);
+  setTimeout(()=>showVictory(tot),900)}}
+const rand=(a,b)=>a+Math.random()*(b-a);
+function aiTick(dt){for(const ai of S.ais){if(!ai.alive)continue;ai.cd=(ai.cd||rand(2,4))-dt;if(ai.cd>0)continue;ai.cd=rand(2.5,5)/(1+.1*(S.ml-1));
+ const mine=G.tiles.filter(t=>t.o===ai.id);ai.t=mine.length;if(!mine.length){ai.alive=0;continue}
+ const front=[];for(const t of mine)for(const n of nbrs(t))if(n.o===-1&&!n.camp)front.push(n);
+ if(front.length&&Math.random()<.8){const n=front[(Math.random()*front.length)|0];n.o=ai.id;ai.t++;if((ai.t===9||ai.t===18||ai.t===30)&&n.t!=='water'){n.city=1;ai.cities++}G.dirty=true}}
+ S.raidT-=dt*(1-.12*P('diplo'));if(S.raidT<=0){S.raidT=rand(14,26);if(S.rt<100)return;const al=S.ais.filter(a=>a.alive);if(!al.length)return;
+  const ai=al[(Math.random()*al.length)|0];const targ=[];for(const t of G.tiles)if(t.o===0&&nbrs(t).some(n=>n.o===ai.id))targ.push(t);
+  if(targ.length){const t=targ[(Math.random()*targ.length)|0];if(G.battles.some(b=>b.to===t))return;startBattle(nbrs(t).find(n=>n.o===ai.id),t,ai.id,0,aiStr(ai)*rand(.4,1.1),playerDef(t))}}}
+const EVS=[['harvest','🌾 Bountiful Harvest! ×3 food & wood',30],['golden','✨ Golden Age! ×2 everything',25],['eureka','💡 Eureka! ×3 science',25],['rush','⛏️ Gold Rush! ×3 gold',25],['valor','🦁 Heroic Valor! ×2 army power',30],['plague','🦠 Plague! ½ food',20],['barb','🏕️ Barbarians spawned new camps!',0]];
+function evTick(dt){S.evs=S.evs.filter(e=>(e.t-=dt)>0);S.nextEv-=dt*(1+.15*P('gold'));if(S.nextEv<=0){S.nextEv=rand(35,60);const e=EVS[(Math.random()*EVS.length)|0];
+ if(e[0]==='barb'){const c=G.tiles.filter(t=>t.o===-1&&t.t!=='water'&&!t.camp);for(let i=0;i<2&&c.length;i++)c.splice((Math.random()*c.length)|0,1)[0].camp=1}else S.evs.push({k:e[0],t:e[2],n:e[1]});toast(e[1],'#ffe08a')}
+ S.nextChest-=dt*(1+.15*P('gold'));if(S.nextChest<=0){S.nextChest=rand(10,18);const c=G.tiles.filter(t=>t.o===0);if(c.length&&G.chests.length<3)G.chests.push({t:c[(Math.random()*c.length)|0]})}}
+function openChest(ch){G.chests.splice(G.chests.indexOf(ch),1);const r=RES[(Math.random()*5)|0];const v=Math.max(25,RATE[r]*rand(15,30));S.res[r]+=v;if(r==='gold')S.runGold+=v;S.st.chests++;qInc('chests');float(ch.t,'+'+fmt(v)+RIC[r],'#ffe08a');burst(ch.t,'#ffd76a',22);sfx('coin')}
+function dayKey(){const d=new Date();return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()}
+function ensureDaily(){if(!S.daily||S.daily.k!==dayKey()){const r=rng(Date.now()&0xffff);const pool=QPOOL.slice().sort(()=>r()-.5).slice(0,3);S.daily={k:dayKey(),q:pool.map(p=>({id:p[0],txt:p[1].replace('{n}',p[2]),n:p[2],c:0,done:0}))}}}
+function qInc(id,n=1){if(!S.daily)return;for(const q of S.daily.q)if(q.id===id&&!q.done){q.c+=n;if(q.c>=q.n){q.done=1;const g=Math.max(100,RATE.gold*60);S.res.gold+=g;S.legacy+=1;toast('📜 Quest done: +'+fmt(g)+'🪙 +1 Legacy','#9cf06f')}}}
+function legacyGain(){const g=Math.sqrt(S.runGold/400)*(1+.5*S.runCaps)*(1+.5*(S.ml-1))*Math.pow(1.35,S.era)*(1+.2*P('leg'))*Math.pow(1.5,AP('leg2'));return S.era>=2?Math.floor(g):0}
+function starGain(){return(S.vicRun||S.era>=8)?Math.floor(1+S.ml+Math.sqrt(S.legacy+legacyGain())/6):0}
+function newRun(){const keep={legacy:S.legacy,perks:S.perks,stars:S.stars,aperks:S.aperks,lb:S.lb,st:S.st,ach:S.ach,daily:S.daily,set:S.set,ml:S.ml};
+ S=Object.assign(fresh(),keep);S.ml=1;S.era=Math.min(8,P('herit')+2*AP('warp'));for(let e=0;e<S.era;e++){for(let i=0;i<4;i++)S.tech[e+'_'+i]=1;S.splits.push(0)}
+ const st=P('start');if(st)for(const k of RES)S.res[k]+=100*st*st*Math.pow(3,S.era);S.res.gold+=60*Math.pow(3,S.era);
+ genMap();loadTiles();let ring=[T(S.cap[0],S.cap[1])];for(let i=0;i<P('head');i++){const nx=[];for(const t of ring)for(const n of nbrs(t))if(n.o===-1&&!n.camp){n.o=0;nx.push(n)}ring=nx}
+ updFog();G.battles=[];G.chests=[];G.sel=null;centerCam(true);save()}
+function dynasty(){const g=legacyGain();if(g<=0)return;confirmBox('Found a new Dynasty?','You gain <b>'+fmt(g)+' Legacy 👑</b>. Map, era, resources & army reset. Legacy, perks, Stars, trophies and records are kept.',()=>{S.legacy+=g;S.st.dyn++;newRun();toast('👑 A new Dynasty rises! +'+fmt(g)+' Legacy','#ffd76a');openSheet('dyn')})}
+function ascend(){const s=starGain();if(s<=0)return;const g=legacyGain();confirmBox('Ascend?','You gain <b>'+s+' Stars 🌟</b> AND bank <b>'+fmt(g)+' Legacy 👑</b>. Legacy perks are kept.',()=>{S.stars+=s;S.legacy+=g;S.st.asc++;S.st.dyn++;newRun();toast('🌟 Ascended! +'+s+' Stars, +'+fmt(g)+' Legacy','#d6b0ff');openSheet('dyn')})}
+function perkCost(p,arr){const lv=(arr===APERKS?S.aperks:S.perks)[p.k]||0;return Math.ceil(p.c*Math.pow(p.g,lv))}
+function buyPerk(p,arr){const o=arr===APERKS?S.aperks:S.perks,cur=arr===APERKS?'stars':'legacy';const lv=o[p.k]||0;if(lv>=p.max)return false;const c=perkCost(p,arr);if(S[cur]<c)return false;S[cur]-=c;o[p.k]=lv+1;sfx('build');renderSheet();return true}
+function nextWorld(){S.ml++;S.vicRun=0;S.seed=(Math.random()*1e9)|0;genMap();loadTiles();for(const k in S.army)S.army[k]=Math.floor(S.army[k]*.5);S.wonders={};G.sel=null;centerCam(true);toast('🌍 World '+S.ml+': rivals are stronger!','#9cd1ff');save()}
+const cam={x:0,y:0,z:1,tx:0,ty:0,tz:1};
+function centerCam(snap){const c=T(S.cap[0],S.cap[1]);cam.tx=hx(c.q,c.r);cam.ty=hy(c.q,c.r)+30;cam.tz=1.15;if(snap){cam.x=cam.tx;cam.y=cam.ty;cam.z=cam.tz}}
+const ptrs=new Map();let pinch0=null,moved=0,downAt=null,lastTap=0;
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1){moved=0;downAt={x:e.clientX,y:e.clientY}}else downAt=null;if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch0={d:Math.hypot(a.x-b.x,a.y-b.y)||1,z:cam.tz}}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;moved+=Math.abs(dx)+Math.abs(dy);
+ if(ptrs.size===2&&pinch0){const [a,b]=[...ptrs.values()];cam.tz=clamp(pinch0.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch0.d,.45,2.6)}else if(ptrs.size===1){cam.tx-=dx/cam.z;cam.ty-=dy/cam.z;cam.x=cam.tx;cam.y=cam.ty}});
+cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null;if(ptrs.size===0&&moved<10&&downAt)tap(downAt.x,downAt.y);downAt=null});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);downAt=null;pinch0=null});
+cv.addEventListener('wheel',e=>{cam.tz=clamp(cam.tz*(e.deltaY<0?1.1:.9),.45,2.6);e.preventDefault()},{passive:false});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function s2w(x,y){return{x:(x-W/2)/cam.z+cam.x,y:(y-H/2)/cam.z+cam.y}}
+function w2s(x,y){return{x:(x-cam.x)*cam.z+W/2,y:(y-cam.y)*cam.z+H/2}}
+function pix2hex(x,y){const q=(SQ3/3*x-y/3)/SZ,r=(2/3*y)/SZ;let rx=Math.round(q),rz=Math.round(r),ry=Math.round(-q-r);const dx=Math.abs(rx-q),dz=Math.abs(rz-r),dy=Math.abs(ry+q+r);if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy<=dz)rz=-rx-ry;return T(rx,rz)}
+function tap(x,y){const w=s2w(x,y);for(const ch of G.chests){if(Math.hypot(hx(ch.t.q,ch.t.r)-w.x,hy(ch.t.q,ch.t.r)-8-w.y)<24){openChest(ch);return}}
+ const t=pix2hex(w.x,w.y);if(t&&t.seen){if(G.sel===t&&t.o===-1&&!t.camp&&adjOwn(t)&&claim(t)){renderPanel();return}G.sel=t;closeSheet();renderPanel()}else{G.sel=null;renderPanel()}}
+let shake=0,flash=0;
+function burst(t,c,n){if(!S.set.fx)return;const x=hx(t.q,t.r),y=hy(t.q,t.r);for(let i=0;i<n;i++){const a=Math.random()*6.28,s=rand(30,130);G.parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-40,l:rand(.5,1),c,r:rand(1.5,3.5)})}}
+function float(t,txt,c){G.floats.push({x:hx(t.q,t.r),y:hy(t.q,t.r)-14,txt,c,l:1.4})}
+let AC=null;function sfx(k){if(!S||!S.set.snd)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value={claim:660,build:520,clash:180,win:880,lose:140,coin:990,era:440}[k]||500;o.type=k==='clash'?'sawtooth':'triangle';g.gain.setValueAtTime(.06,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.18);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.2)}catch(e){}}
+const tc=document.createElement('canvas'),tcx=tc.getContext('2d');let TCS=2,TOFF={x:0,y:0};
+function hexPath(c,x,y,s){c.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i-30);c.lineTo(x+s*Math.cos(a),y+s*Math.sin(a))}c.closePath()}
+function redrawTerrain(){const R=G.R+1;const w=SZ*SQ3*(2*R+1),h=SZ*1.5*(2*R)+SZ*3;TOFF={x:w/2,y:h/2};TCS=Math.min(2,3600/w);const nw=Math.ceil(w*TCS),nh=Math.ceil(h*TCS);if(tc.width!==nw||tc.height!==nh){tc.width=nw;tc.height=nh}else tcx.clearRect(0,0,nw,nh);tcx.setTransform(TCS,0,0,TCS,0,0);
+ for(const t of G.tiles){const x=hx(t.q,t.r)+TOFF.x,y=hy(t.q,t.r)+TOFF.y,T0=TER[t.t];
+  hexPath(tcx,x,y,SZ+.6);const g=tcx.createLinearGradient(x-SZ,y-SZ,x+SZ*.6,y+SZ);g.addColorStop(0,T0.c1);g.addColorStop(1,T0.c2);tcx.fillStyle=g;tcx.fill();
+  const rr=rng(t.q*131+t.r*17+5005);
+  if(t.t==='forest'){for(let i=0;i<4;i++){const px=x+(rr()-.5)*30,py=y+(rr()-.5)*26;tcx.fillStyle='#14451f';tcx.beginPath();tcx.moveTo(px,py-11);tcx.lineTo(px+7,py+4);tcx.lineTo(px-7,py+4);tcx.fill();tcx.fillStyle='#3a9a48';tcx.beginPath();tcx.moveTo(px,py-11);tcx.lineTo(px+4,py+1);tcx.lineTo(px-5,py+3);tcx.fill()}}
+  if(t.t==='mountain'){const px=x+(rr()-.5)*6;tcx.fillStyle='#6c6862';tcx.beginPath();tcx.moveTo(px-18,y+10);tcx.lineTo(px-3,y-16);tcx.lineTo(px+16,y+10);tcx.fill();tcx.fillStyle='#8e8a82';tcx.beginPath();tcx.moveTo(px-3,y-16);tcx.lineTo(px+16,y+10);tcx.lineTo(px+3,y+10);tcx.fill();tcx.fillStyle='#fff';tcx.beginPath();tcx.moveTo(px-3,y-16);tcx.lineTo(px+3,y-8);tcx.lineTo(px-1,y-6);tcx.lineTo(px-8,y-8);tcx.fill()}
+  if(t.t==='desert'){tcx.strokeStyle='rgba(160,110,40,.45)';tcx.lineWidth=1.5;for(let i=0;i<3;i++){tcx.beginPath();const py=y-10+i*9;tcx.moveTo(x-14,py);tcx.quadraticCurveTo(x,py-5,x+14,py);tcx.stroke()}}
+  if(t.t==='snow'){tcx.fillStyle='rgba(180,200,225,.7)';for(let i=0;i<3;i++){tcx.beginPath();tcx.ellipse(x+(rr()-.5)*28,y+(rr()-.5)*22,6,3,0,0,7);tcx.fill()}}
+  if(t.t==='grass'){tcx.fillStyle='rgba(30,90,30,.35)';for(let i=0;i<6;i++)tcx.fillRect(x+(rr()-.5)*34,y+(rr()-.5)*28,1.5,4);tcx.fillStyle='rgba(255,240,120,.6)';tcx.fillRect(x+(rr()-.5)*30,y+(rr()-.5)*24,2,2)}
+  if(t.t==='water'){tcx.strokeStyle='rgba(255,255,255,.25)';tcx.lineWidth=1.2;for(let i=0;i<2;i++){const px=x+(rr()-.5)*20,py=y+(rr()-.5)*20;tcx.beginPath();tcx.arc(px,py,5,3.6,5.8);tcx.stroke()}}
+  hexPath(tcx,x,y,SZ);tcx.strokeStyle='rgba(0,0,0,.18)';tcx.lineWidth=1;tcx.stroke();
+  hexPath(tcx,x,y-1,SZ-3);tcx.strokeStyle='rgba(255,255,255,.08)';tcx.stroke();
+  if(t.o>=0&&t.seen){hexPath(tcx,x,y,SZ-1);tcx.fillStyle=FCOL[t.o]+'3a';tcx.fill()}}
+ tcx.lineWidth=3.2;tcx.lineCap='round';
+ for(const t of G.tiles){if(t.o<0||!t.seen)continue;const x=hx(t.q,t.r)+TOFF.x,y=hy(t.q,t.r)+TOFF.y;
+  for(let i=0;i<6;i++){const d=DIRS[i];const n=T(t.q+d[0],t.r+d[1]);if(n&&n.o===t.o)continue;const ang=[0,-60,-120,180,120,60][i];const a1=(ang-30)*Math.PI/180,a2=(ang+30)*Math.PI/180;
+   tcx.strokeStyle=FCOL[t.o];tcx.beginPath();tcx.moveTo(x+(SZ-2)*Math.cos(a1),y+(SZ-2)*Math.sin(a1));tcx.lineTo(x+(SZ-2)*Math.cos(a2),y+(SZ-2)*Math.sin(a2));tcx.stroke()}}
+ for(const t of G.tiles){if(t.seen)continue;const x=hx(t.q,t.r)+TOFF.x,y=hy(t.q,t.r)+TOFF.y;hexPath(tcx,x,y,SZ+1);const g=tcx.createRadialGradient(x,y,4,x,y,SZ*1.2);g.addColorStop(0,'#1c2640');g.addColorStop(1,'#0e1424');tcx.fillStyle=g;tcx.fill();tcx.fillStyle='rgba(255,255,255,.035)';tcx.beginPath();tcx.arc(x-6,y-4,9,0,7);tcx.fill()}
+ G.dirty=false}
+function house(c,x,y,col,e){if(e>=6){tower(c,x,col,12,e);return}c.fillStyle=e>=3?'#d8cfbf':'#a07a50';c.fillRect(x-5,y,10,8);c.fillStyle=col;c.beginPath();c.moveTo(x-7,y);c.lineTo(x,y-7);c.lineTo(x+7,y);c.fill();c.fillStyle='rgba(40,20,0,.6)';c.fillRect(x-1.5,y+3,3,5)}
+function tower(c,x,col,h,e){const g=c.createLinearGradient(x-4,0,x+4,0);g.addColorStop(0,e>=7?'#9ef':'#cfd8e8');g.addColorStop(1,e>=7?'#2a7fb0':'#7d8aa0');c.fillStyle=g;c.fillRect(x-4,8-h,8,h);c.fillStyle='rgba(255,255,200,.75)';for(let i=0;i<h-4;i+=4)c.fillRect(x-2,10-h+i,4,1.5);if(e>=8){c.fillStyle=col;c.beginPath();c.arc(x,7-h,2,0,7);c.fill()}}
+function drawBuilding(c,t,x,y,time){const e=S.era,b=t.b,lv=t.bl,ec=ERAC[e];
+ c.save();c.translate(x,y);c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(0,9,15,5,0,0,7);c.fill();
+ if(b==='farm'){c.fillStyle='#e9c74a';for(let i=0;i<3;i++)c.fillRect(-14+i*10,-2,8,10);c.fillStyle='#b98a2a';for(let i=0;i<3;i++)c.fillRect(-14+i*10,2,8,1.5);if(e>=5){c.fillStyle='#c33';c.fillRect(6,-12,8,8);c.fillStyle='#555';c.fillRect(6,-14,8,2)}else house(c,-4,-8,ec,e)}
+ else if(b==='lumber'){c.fillStyle='#8a5a2b';c.fillRect(-12,2,24,5);c.fillRect(-10,-3,20,5);c.fillStyle='#c48a4a';c.beginPath();c.arc(-12,4.5,2.5,0,7);c.arc(12,4.5,2.5,0,7);c.fill();house(c,4,-10,ec,e)}
+ else if(b==='mine'){c.fillStyle='#3a2f28';c.beginPath();c.arc(0,4,10,Math.PI,0);c.fill();c.fillStyle='#111';c.beginPath();c.arc(0,5,6,Math.PI,0);c.fill();c.fillStyle='#ffd76a';c.beginPath();c.arc(-9,6,2,0,7);c.arc(9,7,2.2,0,7);c.fill();if(e>=5){c.strokeStyle='#999';c.lineWidth=2;c.beginPath();c.moveTo(-6,-14);c.lineTo(0,-4);c.lineTo(6,-14);c.stroke()}}
+ else if(b==='market'){if(e<5){c.fillStyle='#d4a';c.beginPath();c.moveTo(-14,-2);c.lineTo(0,-14);c.lineTo(14,-2);c.fill();c.fillStyle='#f4e2c0';c.fillRect(-11,-2,22,10);c.fillStyle='#ffd76a';c.beginPath();c.arc(0,3,3.5,0,7);c.fill()}else{tower(c,-6,ec,14+Math.min(lv,10),e);tower(c,6,ec,9+Math.min(lv,8),e)}}
+ else if(b==='lab'){c.fillStyle='#dde8ff';c.fillRect(-10,-6,20,14);c.fillStyle=e>=6?'#9ef':'#6cf';c.beginPath();c.arc(0,-6,10,Math.PI,0);c.fill();c.fillStyle='rgba(120,220,255,'+(.5+.5*Math.sin(time*3+t.ph))+')';c.beginPath();c.arc(0,-9,3,0,7);c.fill()}
+ else if(b==='barracks'){c.fillStyle=e>=5?'#5a6070':'#7a6a5a';c.fillRect(-12,-6,24,14);c.fillStyle=e>=5?'#445':'#9a8a7a';for(let i=0;i<4;i++)c.fillRect(-12+i*7,-10,4,4);c.strokeStyle='#ddd';c.lineWidth=1.5;c.beginPath();c.moveTo(0,-6);c.lineTo(0,-20);c.stroke();c.fillStyle=FCOL[0];c.beginPath();c.moveTo(0,-20);c.lineTo(9+Math.sin(time*5)*2,-17);c.lineTo(0,-14);c.fill()}
+ else if(b==='wonder'){const we=t.wn??e;const g=c.createLinearGradient(0,-24,0,8);g.addColorStop(0,'#fff6c0');g.addColorStop(1,'#d9a520');c.fillStyle=g;
+  if(we<3){c.beginPath();c.moveTo(-15,8);c.lineTo(0,-22);c.lineTo(15,8);c.fill()}else if(we<6){c.fillRect(-13,-6,26,14);c.beginPath();c.arc(0,-6,11,Math.PI,0);c.fill();c.fillRect(-1.5,-24,3,8)}else{c.beginPath();c.moveTo(-6,8);c.lineTo(-2,-28);c.lineTo(2,-28);c.lineTo(6,8);c.fill();c.strokeStyle='rgba(180,140,255,.8)';c.lineWidth=2;c.beginPath();c.ellipse(0,-10,14,4,Math.sin(time)*.2,0,7);c.stroke()}
+  c.fillStyle='rgba(255,230,120,'+(.2+.15*Math.sin(time*2))+')';c.beginPath();c.arc(0,-6,20,0,7);c.fill()}
+ if(lv>1&&b!=='wonder'){c.fillStyle='rgba(0,0,0,.6)';c.fillRect(8,4,15,10);c.fillStyle='#fff';c.font='bold 8px system-ui';c.textAlign='center';c.fillText(lv,15.5,12)}
+ c.restore()}
+function drawCity(c,t,x,y,time){const col=FCOL[t.o]||'#999',e=t.o<=0?S.era:Math.min(8,S.era+Math.round(S.ais[t.o-1]?S.ais[t.o-1].bonus:0));const big=t.city===2;
+ c.save();c.translate(x,y);c.fillStyle='rgba(0,0,0,.3)';c.beginPath();c.ellipse(0,9,19,6,0,0,7);c.fill();
+ c.fillStyle=e<3?'#9a7a52':e<6?'#b8b0a0':'#6e7a8c';c.fillRect(-16,-2,32,10);for(let i=0;i<5;i++)c.fillRect(-16+i*7,-5,4,3);
+ if(e<6){house(c,-8,-10,col,e);house(c,7,-9,col,e);if(big){c.fillStyle='#e0d8c8';c.fillRect(-3,-22,6,20);c.fillStyle=col;c.beginPath();c.moveTo(-5,-22);c.lineTo(0,-30);c.lineTo(5,-22);c.fill()}}
+ else{tower(c,-9,col,16,e);tower(c,0,col,big?28:20,e);tower(c,9,col,14,e);if(e>=8){c.strokeStyle=col;c.lineWidth=1.5;c.beginPath();c.ellipse(0,-14,18,5,0,0,7);c.stroke()}}
+ c.strokeStyle='#eee';c.lineWidth=1.2;c.beginPath();c.moveTo(14,-4);c.lineTo(14,-24);c.stroke();c.fillStyle=col;c.beginPath();c.moveTo(14,-24);c.lineTo(23+Math.sin(time*4+t.ph)*2,-21);c.lineTo(14,-18);c.fill();
+ if(big){c.font='12px system-ui';c.textAlign='center';c.fillText('👑',0,-31)}c.restore()}
+function drawUnit(c,x,y,side,k,col,e,time,ph){c.save();c.translate(x,y);c.fillStyle='rgba(0,0,0,.3)';c.beginPath();c.ellipse(0,4,5,2,0,0,7);c.fill();
+ if(e>=8&&k>=2){c.fillStyle=col;c.beginPath();c.moveTo(0,-9);c.lineTo(7,4);c.lineTo(-7,4);c.fill();c.fillStyle='#9ef';c.beginPath();c.arc(0,4,2+Math.sin(time*20),0,7);c.fill()}
+ else if(e>=5&&k===2){c.fillStyle=col;c.fillRect(-7,-4,14,7);c.fillStyle='#333';c.fillRect(-7,2,14,2.5);c.beginPath();c.fillStyle=col;c.arc(0,-5,3.5,0,7);c.fill();c.strokeStyle='#222';c.lineWidth=2;c.beginPath();c.moveTo(0,-5);c.lineTo(side?-9:9,-6);c.stroke()}
+ else{const bob=Math.sin(time*12+ph)*1.2;c.fillStyle=col;c.fillRect(-3,-6+bob,6,8);c.fillStyle='#f2d0a8';c.beginPath();c.arc(0,-8+bob,2.6,0,7);c.fill();if(e>=6){c.fillStyle='#455';c.beginPath();c.arc(0,-9+bob,2.8,Math.PI,0);c.fill()}
+  c.strokeStyle=e>=4?'#333':'#c8a060';c.lineWidth=1.6;c.beginPath();c.moveTo(side?-2:2,-4+bob);c.lineTo(side?-8:8,-10+bob);c.stroke();if(k===2&&e<5){c.fillStyle='#7a5030';c.fillRect(-6,1,12,4)}}
+ c.restore()}
+let lastT=performance.now(),fpsAcc=0,fpsN=0,FPS=60;
+function frame(now){const rdt=Math.min(.1,(now-lastT)/1000);lastT=now;fpsAcc+=rdt;fpsN++;if(fpsAcc>=1){FPS=Math.round(fpsN/fpsAcc);fpsAcc=0;fpsN=0}
+ step(rdt*(1+.2*AP('time')));draw(now/1000);requestAnimationFrame(frame)}
+let uiT=0,saveT=0,autoT=0,bldT=0;
+const lerp=(a,b,t)=>a+(b-a)*t;
+function step(dt){S.rt+=dt;calcRates();for(const k of RES)S.res[k]+=RATE[k]*dt;S.runGold+=RATE.gold*dt;
+ aiTick(dt);evTick(dt);
+ for(const b of G.battles){b.t+=dt;const p=Math.min(1,b.t/b.dur);if(p>.45){const k=(p-.45)/.55;const w=b.ap>=b.dp;const ratio=w?b.dp/b.ap:b.ap/b.dp;b.ahp=w?1-k*ratio*.8:1-k;b.dhp=w?1-k:1-k*ratio*.8;
+  if(S.set.fx&&Math.random()<.4)G.parts.push({x:lerp(hx(b.from.q,b.from.r),hx(b.to.q,b.to.r),.6)+rand(-12,12),y:lerp(hy(b.from.q,b.from.r),hy(b.to.q,b.to.r),.6)+rand(-10,10),vx:rand(-40,40),vy:rand(-80,-20),l:.5,c:Math.random()<.5?'#ffcf5a':'#ff6a3a',r:2})}
+  if(b.t>=b.dur){b.done=1;resolveBattle(b)}}
+ G.battles=G.battles.filter(b=>!b.done);
+ for(const p of G.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.smoke?-10:160)*dt;p.l-=dt}G.parts=G.parts.filter(p=>p.l>0);if(G.parts.length>400)G.parts.splice(0,G.parts.length-400);
+ for(const f of G.floats){f.y-=22*dt;f.l-=dt}G.floats=G.floats.filter(f=>f.l>0);
+ const k=Math.min(1,dt*10);cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.z+=(cam.tz-cam.z)*k;
+ if(P('auto')){autoT+=dt;if(autoT>Math.max(1,6-P('auto'))){autoT=0;autoClaim()}}
+ if(P('build')){bldT+=dt;if(bldT>Math.max(.8,4-.6*P('build'))){bldT=0;autoBuild()}}
+ if(AP('ancient'))for(let i=0;i<4;i++)if(research(S.era,i))break;
+ shake*=.88;flash*=.94;
+ uiT+=dt;if(uiT>.25){uiT=0;renderTop();if(G.sel)renderPanelSoft();if($('sheet').style.display==='block')renderSheetSoft();checkAch()}
+ saveT+=dt;if(saveT>10){saveT=0;save()}}
+function autoClaim(){if(!can(claimCost()))return;for(const t of G.tiles)if(t.o===-1&&!t.camp&&t.t!=='water'&&adjOwn(t)){claim(t);return}}
+function autoBuild(){let best=null,bc=1e300;for(const t of G.tiles)if(t.o===0&&t.b&&t.b!=='wonder'){const c=buildCost(t,t.b);if(!can(c))continue;const v=Object.values(c).reduce((a,b)=>a+b,0);if(v<bc){bc=v;best=t}}if(best)build(best,best.b)}
+function draw(time){if(G.dirty)redrawTerrain();const c=cx;c.setTransform(DPR,0,0,DPR,0,0);
+ const bg=c.createRadialGradient(W/2,H/2,50,W/2,H/2,H);bg.addColorStop(0,'#16325a');bg.addColorStop(1,'#060b16');c.fillStyle=bg;c.fillRect(0,0,W,H);
+ const sh=S.set.shake&&shake>.3;const sx=sh?rand(-shake,shake):0,sy=sh?rand(-shake,shake):0;
+ c.save();c.translate(W/2+sx,H/2+sy);c.scale(cam.z,cam.z);c.translate(-cam.x,-cam.y);
+ c.drawImage(tc,-TOFF.x,-TOFF.y,tc.width/TCS,tc.height/TCS);
+ const v0=s2w(-50,-50),v1=s2w(W+50,H+50);const cc=can(claimCost());
+ for(const t of G.tiles){const x=hx(t.q,t.r),y=hy(t.q,t.r);if(x<v0.x||x>v1.x||y<v0.y||y>v1.y||!t.seen)continue;
+  if(t.t==='water'){c.fillStyle='rgba(255,255,255,'+(.05+.05*Math.sin(time*2+t.ph))+')';c.beginPath();c.ellipse(x+Math.sin(time+t.ph)*5,y,10,3,0,0,7);c.fill()}
+  if(t.city)drawCity(c,t,x,y,time);else if(t.b)drawBuilding(c,t,x,y,time);
+  if(t.camp){c.font='18px system-ui';c.textAlign='center';c.fillText('🏕️',x,y+6)}
+  if(t.o===-1&&!t.camp&&adjOwn(t)){c.strokeStyle='rgba(140,220,255,'+(.25+.2*Math.sin(time*3))+')';c.lineWidth=1.5;c.setLineDash([4,4]);hexPath(c,x,y,SZ-5);c.stroke();c.setLineDash([]);
+   if(cc){c.fillStyle='rgba(120,255,170,.9)';c.font='bold 15px system-ui';c.textAlign='center';c.fillText('+',x,y+5)}}}
+ if(S.era>=5&&S.set.fx&&Math.random()<.25){const own=G.tiles.filter(t=>t.o===0&&(t.b||t.city));if(own.length){const t=own[(Math.random()*own.length)|0];G.parts.push({x:hx(t.q,t.r)+rand(-6,6),y:hy(t.q,t.r)-16,vx:rand(-5,5),vy:-22,l:1.2,c:'rgba(210,210,220,.45)',r:3,smoke:1})}}
+ for(const ch of G.chests){const x=hx(ch.t.q,ch.t.r),y=hy(ch.t.q,ch.t.r)-8+Math.sin(time*4)*3;c.fillStyle='rgba(255,215,90,'+(.3+.2*Math.sin(time*5))+')';c.beginPath();c.arc(x,y,16,0,7);c.fill();c.font='20px system-ui';c.textAlign='center';c.fillText('🎁',x,y+7)}
+ for(const b of G.battles){const ax=hx(b.from.q,b.from.r),ay=hy(b.from.q,b.from.r),dx=hx(b.to.q,b.to.r),dy=hy(b.to.q,b.to.r);const p=Math.min(1,b.t/b.dur);const mx=lerp(ax,dx,.6),my=lerp(ay,dy,.6);
+  const acol=FCOL[b.att],dcol=b.def===9?'#8a6a4a':FCOL[b.def];const ae=b.att===0?S.era:Math.min(8,S.era+Math.round(S.ais[b.att-1]?S.ais[b.att-1].bonus:0));
+  for(const u of b.units){const isA=u.s===0;const alive=isA?b.ahp:b.dhp;if(u.r/10>alive*1.1)continue;const mv=Math.min(1,p/.45);
+   const sxp=isA?ax:dx,syp=isA?ay:dy;const ux=lerp(sxp,mx,mv)+Math.cos(u.o)*(6+u.r)+(p>.45?Math.sin(time*25+u.o)*2:0),uy=lerp(syp,my,mv)+Math.sin(u.o)*(5+u.r*.6);
+   drawUnit(c,ux,uy,isA?0:1,u.k,isA?acol:dcol,ae,time,u.o)}
+  const bar=(x,y,f,col)=>{c.fillStyle='rgba(0,0,0,.65)';c.fillRect(x-16,y,32,5);c.fillStyle=col;c.fillRect(x-15,y+1,30*Math.max(0,f),3)};
+  bar(lerp(ax,mx,.5),lerp(ay,my,.5)-24,b.ahp,acol);bar(lerp(dx,mx,.3),lerp(dy,my,.3)-24,b.dhp,dcol);
+  if(p>.45){c.font='14px system-ui';c.textAlign='center';c.fillText('⚔️',mx,my-12+Math.sin(time*20)*2)}}
+ for(const p of G.parts){c.globalAlpha=Math.max(0,Math.min(1,p.l*1.5));c.fillStyle=p.c;c.beginPath();c.arc(p.x,p.y,p.smoke?p.r*(2.2-p.l):p.r,0,7);c.fill()}c.globalAlpha=1;
+ if(G.sel){const x=hx(G.sel.q,G.sel.r),y=hy(G.sel.q,G.sel.r);c.strokeStyle='#fff';c.lineWidth=2.5;c.shadowColor='#9cf';c.shadowBlur=12;hexPath(c,x,y,SZ-1.5+Math.sin(time*5));c.stroke();c.shadowBlur=0}
+ for(const f of G.floats){c.globalAlpha=Math.min(1,f.l);c.font='bold 14px system-ui';c.textAlign='center';c.lineWidth=3;c.strokeStyle='rgba(0,0,0,.6)';c.strokeText(f.txt,f.x,f.y);c.fillStyle=f.c;c.fillText(f.txt,f.x,f.y)}c.globalAlpha=1;
+ c.restore();
+ if(flash>.02){c.fillStyle='rgba(255,230,150,'+flash*.5+')';c.fillRect(0,0,W,H)}
+ const v=c.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,H*.75);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.45)');c.fillStyle=v;c.fillRect(0,0,W,H)}
+function fmtT(s){s=Math.max(0,s);const h=Math.floor(s/3600),m=Math.floor(s/60)%60,ss=s%60;return(h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+ss.toFixed(1).padStart(4,'0')}
+function renderTop(){$('res').innerHTML=RES.map(k=>`<div class="chip"><b>${RIC[k]} ${fmt(S.res[k])}</b><i>+${fmt(RATE[k])}/s</i></div>`).join('');
+ $('era').textContent=ERAS[S.era]+' Era';$('mapl').textContent='🌍 W'+S.ml+' · '+OWN+' tiles';$('army').textContent='⚔️ '+fmt(armyPow());$('timer').textContent='⏱ '+fmtT(S.rt);
+ const ev=S.evs[0];$('evb').style.display=ev?'block':'none';if(ev)$('evb').textContent=ev.n.split('!')[0]+'! '+Math.ceil(ev.t)+'s';
+ const ti=$('tabs').children;let techAv=false;for(let i=0;i<4;i++)if(techOk(S.era,i)&&S.res.sci>=techCost(S.era,i))techAv=true;
+ ti[2].querySelector('.dot').style.display=techAv?'block':'none';const lg=legacyGain();ti[3].querySelector('.dot').style.display=lg>0&&lg>=Math.max(3,S.legacy*.5)?'block':'none';ti[4].querySelector('.dot').style.display=S.daily&&S.daily.q.some(q=>q.done&&!q.seen)?'block':'none'}
+let panelKey='';
+function panelHTML(){const t=G.sel;if(!t)return'';const T0=TER[t.t];let sub='',btn='';
+ const own=t.o===0;const name=t.city===2?(own?'Your Capital':FNAME[t.o]+' Capital'):t.city?(own?'Your City':FNAME[t.o]+' City'):t.camp?'Barbarian Camp':t.b==='wonder'?WNAME[t.wn??0]:T0.n;
+ const yl=Object.keys(T0.y).map(k=>RIC[k]+T0.y[k]).join(' ');
+ if(own){sub=`${T0.n} · base ${yl}`+(t.b?` · ${BLD[t.b].n} Lv${t.bl}`:'');
+  if(t.b&&t.b!=='wonder'){const c=buildCost(t,t.b);const B=BLD[t.b];const nxt=Object.keys(B.r).map(r=>RIC[r]+fmt(B.r[r]*(B.bonus[t.t]||1)*MULT[r]*((t.bl+1)*Math.pow(1.1,t.bl+1)*Math.pow(1.5,Math.floor((t.bl+1)/10))-t.bl*Math.pow(1.1,t.bl)*Math.pow(1.5,Math.floor(t.bl/10))))).join(' ')||B.desc;
+   btn+=`<button class="g" onclick="act('up')" ${can(c)?'':'disabled'}>⬆️ Upgrade to Lv${t.bl+1}<small>+${nxt}/s</small><small>${costStr(c)}</small></button>`}
+  else if(t.b==='wonder')sub+=' · ×1.25 all production';
+  else if(!t.city){for(const k in BLD){const B=BLD[k];if(!B.ok.includes(t.t))continue;if(k==='wonder'&&S.wonders[S.era])continue;const c=buildCost(t,k);const out=Object.keys(B.r).map(r=>RIC[r]+fmt(B.r[r]*(B.bonus[t.t]||1)*1.15*MULT[r])).join(' ');btn+=`<button class="${k==='wonder'?'o':''}" onclick="act('b','${k}')" ${can(c)?'':'disabled'}>${B.ic} ${k==='wonder'?WNAME[S.era]:B.n}<small>${out?out+'/s':B.desc}</small><small>${costStr(c)}</small></button>`}}
+  else sub+=' · defense ⚔️'+fmt(playerDef(t))}
+ else if(t.o===-1&&!t.camp){sub=`${T0.n} · yields ${yl}`;if(adjOwn(t)){const c=claimCost();btn=`<button class="g" onclick="act('claim')" ${can(c)?'':'disabled'}>🚩 Claim tile<small>${costStr(c)}</small></button><span style="font-size:11px;color:#9ab;align-self:center">Tip: tap a tile twice to claim</span>`}else sub+=' · not next to your border'}
+ else{const d=tileDef(t);const p=t.city?siegePow():armyPow();sub=(t.camp?'Barbarian loot inside':`Owned by <b style="color:${FCOL[t.o]}">${FNAME[t.o]}</b>`)+` · Defense ⚔️${fmt(d)} vs your ${fmt(p)}`+(t.city?' (siege)':'')+(t.city===2&&S.era<5?'<br>🏰 Capitals are fortified: half as strong each era until Industrial':'');
+  if(adjOwn(t)){const ch=p>=d;btn=`<button class="${ch?'r':''}" onclick="act('atk')" ${p>0?'':'disabled'}>⚔️ Attack${t.city?' City':''}<small>${ch?'Victory likely':'Too strong, train more'}</small></button><button onclick="openSheet('army')">🛡️ Train</button>`}else sub+=' · not adjacent'}
+ return `<h3>${name}</h3><div class="sub">${sub}</div><div class="btns">${btn}</div>`}
+function renderPanel(){const p=$('panel');if(!G.sel){p.style.display='none';return}p.style.display='block';panelKey=panelHTML();p.innerHTML=panelKey}
+function renderPanelSoft(){const h=panelHTML();if(h!==panelKey){panelKey=h;$('panel').innerHTML=h}}
+window.act=(a,k)=>{const t=G.sel;if(a==='claim')claim(t);if(a==='b')build(t,k);if(a==='up')build(t,t.b);if(a==='atk')attack(t);renderPanel();renderTop()};
+let tab='map',sheetKey='';
+document.querySelectorAll('#tabs div').forEach(d=>d.onclick=()=>{const t=d.dataset.t;if(t==='map'||tab===t){closeSheet();if(t==='map'&&!G.sel)centerCam(false)}else openSheet(t)});
+function openSheet(t){tab=t;G.sel=null;renderPanel();document.querySelectorAll('#tabs div').forEach(d=>d.classList.toggle('on',d.dataset.t===t));$('sheet').style.display='block';$('sheet').scrollTop=0;renderSheet()}
+function closeSheet(){tab='map';$('sheet').style.display='none';document.querySelectorAll('#tabs div').forEach(d=>d.classList.toggle('on',d.dataset.t==='map'))}
+let moreSeg='quests';window.seg=s=>{moreSeg=s;renderSheet()};
+function sheetHTML(){let h='';
+ if(tab==='army'){h=`<h2>⚔️ Army · ${ERAS[S.era]} Era</h2><div style="font-size:12px;color:#b8c4dc;margin-bottom:8px">Power <b>${fmt(armyPow())}</b> · Siege <b>${fmt(siegePow())}</b> · each unit ×${fmt(unitMul())}. Siege units hit cities ×3.5. Upgrading units happens automatically each era.</div>`;
+  for(const R of ROLES){const c=unitCost(R);h+=`<div class="row"><div class="ic">${R.ic[S.era]}</div><div class="tx"><b>${R.n[S.era]} ×${S.army[R.k]}</b>Power ${fmt(R.p*unitMul())} each${R.siege?' · siege ×3.5':''}<br>${costStr(c)}</div><button class="g" onclick="tr('${R.k}',1)" ${can(c)?'':'disabled'}>+1</button><button onclick="tr('${R.k}',1000)" ${can(c)?'':'disabled'}>Max</button></div>`}
+  h+=`<div style="font-size:11.5px;color:#9ab">Next era: ${S.era<8?ROLES.map(R=>R.n[S.era+1]).join(', '):'max era reached'}</div>`}
+ if(tab==='tech'){h=`<h2>🔬 Research</h2><div style="display:flex;gap:3px;margin-bottom:4px">${ERAS.map((e,i)=>`<div style="flex:1;height:8px;border-radius:4px;background:${i<=S.era?ERAC[i]:'rgba(255,255,255,.1)'}"></div>`).join('')}</div><div style="font-size:12px;color:#b8c4dc;margin-bottom:8px">Science <b>${fmt(S.res.sci)}</b> (+${fmt(RATE.sci)}/s). Each era: ×1.45 production, ×2.3 unit power, new looks.</div>`;
+  const eff=['+35% food, wood & stone','+35% army power','+35% gold & science','Unlock the '+(ERAS[S.era+1]||'')+' Era'];const ic=['🌾','⚔️','📜','🚀'];
+  for(let i=0;i<4;i++){if(i===3&&S.era>=8)continue;const done=S.tech[S.era+'_'+i];const c=techCost(S.era,i);const lock=i===3&&!(S.tech[S.era+'_0']&&S.tech[S.era+'_1']&&S.tech[S.era+'_2']);
+   h+=`<div class="row"><div class="ic">${ic[i]}</div><div class="tx"><b>${techName(S.era,i)}</b>${eff[i]}${lock?' · research the other 3 first':''}<div class="prog"><i style="width:${done?100:Math.min(100,S.res.sci/c*100)}%"></i></div></div>${done?'✅':`<button class="${i===3?'o':'g'}" onclick="rs(${i})" ${S.res.sci>=c&&!lock?'':'disabled'}>🔬${fmt(c)}</button>`}</div>`}
+  if(S.era>=8)h+='<div class="row"><div class="ic">🌌</div><div class="tx"><b>Space Era reached!</b>Conquer the world, or Ascend for Stars.</div></div>';
+  h+='<h2 style="margin-top:10px">Completed eras</h2><div style="font-size:12px;color:#b8c4dc">'+(S.era?ERAS.slice(0,S.era).map((e,i)=>`${e}${S.splits[i]?' · '+fmtT(S.splits[i]):''}`).join('<br>'):'None yet')+'</div>'}
+ if(tab==='dyn'){const g=legacyGain(),s=starGain();
+  h=`<h2>👑 Dynasty</h2><div class="row"><div class="ic">👑</div><div class="tx"><b>${fmt(S.legacy)} Legacy</b>Each gives +2% production. Reset now for <b>+${fmt(g)}</b>${S.era<2?' (unlocks at Iron Era)':''}</div><button class="o" onclick="dynasty()" ${g>0?'':'disabled'}>Found Dynasty</button></div>`;
+  for(const p of PERKS){const lv=P(p.k),c=perkCost(p,PERKS);h+=`<div class="row"><div class="ic">${p.ic}</div><div class="tx"><b>${p.n} ${lv}/${p.max}</b>${p.d}</div>${lv>=p.max?'MAX':`<button class="g" onclick="bp('${p.k}',0)" ${S.legacy>=c?'':'disabled'}>👑${fmt(c)}</button>`}</div>`}
+  h+=`<h2 style="margin-top:14px">🌟 Ascension</h2><div class="row"><div class="ic">🌟</div><div class="tx"><b>${S.stars} Stars</b>Ascend for <b>+${s}</b> Stars and also bank <b>+${fmt(g)}</b> Legacy${s?'':' (conquer a world or reach Space Era)'}</div><button class="p" onclick="ascend()" ${s>0?'':'disabled'}>Ascend</button></div>`;
+  for(const p of APERKS){const lv=AP(p.k),c=perkCost(p,APERKS);h+=`<div class="row"><div class="ic">${p.ic}</div><div class="tx"><b>${p.n} ${lv}/${p.max}</b>${p.d}</div>${lv>=p.max?'MAX':`<button class="p" onclick="bp('${p.k}',1)" ${S.stars>=c?'':'disabled'}>🌟${c}</button>`}</div>`}}
+ if(tab==='more'){h=`<div class="seg">${[['quests','📜 Quests'],['speed','⏱ Speedrun'],['ach','🏆 Trophies'],['set','⚙️ Settings']].map(s=>`<div class="${moreSeg===s[0]?'on':''}" onclick="seg('${s[0]}')">${s[1]}</div>`).join('')}</div>`;
+  if(moreSeg==='quests'){S.daily.q.forEach(q=>{if(q.done)q.seen=1});h+=`<h2>📜 Daily Quests</h2>`+S.daily.q.map(q=>`<div class="row"><div class="ic">${q.done?'✅':'📜'}</div><div class="tx"><b>${q.txt}</b>${Math.min(q.c,q.n)}/${q.n} · reward: 60s of gold + 1 Legacy<div class="prog"><i style="width:${Math.min(100,q.c/q.n*100)}%"></i></div></div></div>`).join('')+'<div style="font-size:11.5px;color:#9ab">New quests every day.</div>'}
+  if(moreSeg==='speed'){const pb=S.lb[0];h+=`<h2>⏱ Speedrun</h2><div style="font-size:12px;color:#b8c4dc;margin-bottom:6px">The timer starts with each Dynasty. Splits at every era and when the world is conquered.</div><table><tr><td><b>Split</b></td><td><b>Time</b></td><td><b>vs PB</b></td></tr>`;
+   for(let i=1;i<9;i++){const t=S.splits[i-1],p=pb?pb.sp[i-1]:undefined;h+=`<tr><td>${ERAS[i]}</td><td>${t!==undefined?fmtT(t):'—'}</td><td>${p!==undefined?(t!==undefined?`<span class="${t<=p?'gn':'rd'}">${t<=p?'−':'+'}${fmtT(Math.abs(t-p))}</span>`:fmtT(p)):'—'}</td></tr>`}
+   h+=`<tr><td>🌍 World</td><td>${S.vicRun?'✅':fmtT(S.rt)}</td><td>${pb?fmtT(pb.t):'—'}</td></tr></table><h2 style="margin-top:12px">🏆 Top 10</h2><table>`+(S.lb.length?S.lb.map((r,i)=>`<tr><td>#${i+1}</td><td><b>${fmtT(r.t)}</b></td><td>W${r.ml} · ${ERAS[r.e]}</td><td>${r.d}</td></tr>`).join(''):'<tr><td>No completed runs yet. Conquer a world!</td></tr>')+`</table><div style="margin-top:8px"><button onclick="copyRun()">📋 Copy splits</button></div>`}
+  if(moreSeg==='ach'){const n=ACH.filter(a=>S.ach[a[0]]).length;h+=`<h2>🏆 Trophies ${n}/${ACH.length}</h2>`+ACH.map(a=>`<div class="row" style="opacity:${S.ach[a[0]]?1:.45}"><div class="ic">${S.ach[a[0]]?'🏆':'🔒'}</div><div class="tx"><b>${a[1]}</b>${a[2]}</div></div>`).join('')}
+  if(moreSeg==='set'){h+=`<h2>⚙️ Settings</h2><div class="row"><div class="tx"><b>Particles & effects</b></div><button onclick="S.set.fx^=1;renderSheet()">${S.set.fx?'On':'Off'}</button></div><div class="row"><div class="tx"><b>Screen shake</b></div><button onclick="S.set.shake^=1;renderSheet()">${S.set.shake?'On':'Off'}</button></div><div class="row"><div class="tx"><b>Sound</b></div><button onclick="S.set.snd^=1;renderSheet()">${S.set.snd?'On':'Off'}</button></div>
+   <div class="row"><div class="tx"><b>Save</b>Autosaves every 10s</div><button onclick="save();toast('Saved 💾')">Save</button><button onclick="exportSave()">Export</button><button onclick="importSave()">Import</button></div>
+   <div class="row"><div class="tx"><b>Hard reset</b>Wipes everything</div><button class="r" onclick="hardReset()">Reset</button></div><div style="font-size:11px;color:#789">Hex Dominion v${VER} · no ads, no tracking · ${FPS} fps</div>`}}
+ return h}
+function renderSheet(){const h=sheetHTML();sheetKey=h;const sc=$('sheet').scrollTop;$('sheet').innerHTML=h;$('sheet').scrollTop=sc}
+function renderSheetSoft(){if(tab==='more'&&moreSeg==='set')return;const h=sheetHTML();if(h!==sheetKey){sheetKey=h;const sc=$('sheet').scrollTop;$('sheet').innerHTML=h;$('sheet').scrollTop=sc}}
+window.tr=(k,n)=>{train(ROLES.find(R=>R.k===k),n);renderSheet()};window.rs=i=>{research(S.era,i);renderSheet()};window.bp=(k,a)=>{const arr=a?APERKS:PERKS;buyPerk(arr.find(p=>p.k===k),arr)};
+window.copyRun=()=>{const txt='Hex Dominion speedrun\n'+S.splits.map((t,i)=>ERAS[i+1]+': '+fmtT(t)).join('\n')+(S.lb[0]?'\nBest world: '+fmtT(S.lb[0].t):'');try{navigator.clipboard.writeText(txt)}catch(e){}toast('Copied 📋')};
+function toast(t,col){const d=document.createElement('div');d.className='toast glass';d.innerHTML=t;if(col)d.style.color=col;$('toasts').appendChild(d);setTimeout(()=>d.remove(),2600);while($('toasts').children.length>3)$('toasts').firstChild.remove()}
+function modal(h){$('mbox').innerHTML=h;$('modal').style.display='flex'}
+window.closeModal=()=>{$('modal').style.display='none'};
+let confirmCb=null;function confirmBox(t,b,cb){confirmCb=cb;modal(`<h2>${t}</h2><p>${b}</p><div class="btns" style="justify-content:center"><button class="r" onclick="closeModal()">Cancel</button><button class="g" id="okb" onclick="closeModal();confirmCb()">Confirm</button></div>`)}
+window.dynasty=dynasty;window.ascend=ascend;window.save=save;window.toast=toast;window.renderSheet=renderSheet;window.openSheet=openSheet;window.nextWorld=()=>{closeModal();nextWorld()};
+window.hardReset=()=>confirmBox('Hard reset?','This deletes ALL progress, Legacy, Stars and records. It cannot be undone.',()=>{localStorage.removeItem(SK);S=fresh();ensureDaily();genMap();loadTiles();G.sel=null;centerCam(true);closeSheet()});
+window.exportSave=()=>{packTiles();const s=btoa(unescape(encodeURIComponent(JSON.stringify(S))));try{navigator.clipboard.writeText(s)}catch(e){}modal(`<h2>Export</h2><textarea style="width:100%;height:120px;font-size:9px">${s}</textarea><button onclick="closeModal()">Close</button>`)};
+window.importSave=()=>{const s=prompt('Paste save');if(!s)return;try{S=Object.assign(fresh(),JSON.parse(decodeURIComponent(escape(atob(s.trim())))));loadTiles();centerCam(true);toast('Imported ✅')}catch(e){toast('Bad save','#f88')}};
+function showVictory(t){const pb=S.lb[0]&&S.lb[0].t===t;modal(`<div style="font-size:54px">🌍👑</div><h2>World ${S.ml} Conquered!</h2><p>Time <b>${fmtT(t)}</b> · ${ERAS[S.era]} Era<br>${pb?'<b class="gn">🏆 New personal best!</b>':''}</p><table>${S.splits.map((s,i)=>`<tr><td>${ERAS[i+1]}</td><td>${fmtT(s)}</td></tr>`).join('')}</table><p>Ascension is unlocked. Continue to a bigger, harder world, or Ascend for Stars.</p><div class="btns" style="justify-content:center"><button class="g" onclick="nextWorld()">🌍 Next World</button><button class="p" onclick="closeModal();openSheet('dyn')">🌟 Ascend</button></div>`);flash=1}
+function checkAch(){for(const a of ACH)if(!S.ach[a[0]]&&a[3]()){S.ach[a[0]]=1;toast('🏆 Trophy: '+a[1],'#ffd76a')}}
+const SK='hexdominion_v1';
+function save(){packTiles();S.last=Date.now();try{localStorage.setItem(SK,JSON.stringify(S))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(SK));if(d&&d.tiles){S=Object.assign(fresh(),d);loadTiles();return true}}catch(e){}return false}
+addEventListener('visibilitychange',()=>{if(document.hidden)save();else offline()});addEventListener('pagehide',save);
+function offline(){const dt=Math.min(8*3600,(Date.now()-S.last)/1000);S.last=Date.now();if(dt<30)return;calcRates();const eff=.5+.15*P('offl');const got={};for(const k of RES){got[k]=RATE[k]*dt*eff;S.res[k]+=got[k]}S.runGold+=got.gold;
+ modal(`<div style="font-size:44px">🌙</div><h2>Welcome back!</h2><p>Away ${fmtT(dt)}. Your realm produced (${Math.round(eff*100)}%):</p><p>${RES.map(k=>RIC[k]+' '+fmt(got[k])).join('<br>')}</p><button class="g" onclick="closeModal()">Collect</button>`)}
+S=fresh();
+if(!load()){genMap();loadTiles();setTimeout(()=>modal(`<div style="font-size:50px">⬡👑</div><h2>Hex Dominion</h2><p style="font-size:13.5px;text-align:left">🚩 Tap glowing tiles next to your border to <b>claim</b> them (tap twice = instant).<br>🏗️ Tap your tiles to <b>build</b> farms, mines, markets, labs…<br>🔬 Research techs to advance 9 eras, Stone → Space.<br>⚔️ Train an army and <b>attack</b> rivals. Capture every capital to win the world.<br>👑 Found a Dynasty for Legacy. 🌟 Ascend after conquest.<br>🎁 Tap gift boxes for loot!</p><button class="g" onclick="closeModal()">Start ruling</button>`),300)}else setTimeout(offline,200);
+ensureDaily();centerCam(true);calcRates();renderTop();requestAnimationFrame(frame);setInterval(ensureDaily,60000);
+window.__hd={get S(){return S},G,claim,build,train,research,attack,attackable,dynasty,ascend,nextWorld,legacyGain,starGain,owned,armyPow,siegePow,tileDef,T,nbrs,ROLES,step,RATE,get FPS(){return FPS},openSheet,closeSheet,tap,cam,hx,hy,adjOwn,claimCost,buildCost,can,BLD,techOk,techCost,unitCost,w2s,newRun};
+</script></body></html>
