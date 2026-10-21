@@ -66,20 +66,21 @@ table{width:100%;font-size:11.5px;border-collapse:collapse}td{padding:3px 2px;bo
 <div id="modal"><div class="box glass" id="mbox"></div></div>
 <script>
 "use strict";
-const VER='1.0';
+const VER='1.1';
 const $=id=>document.getElementById(id);
 const cv=$('cv'),cx=cv.getContext('2d');
 let W=0,H=0,DPR=1;
 function resize(){DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;}
 addEventListener('resize',resize);resize();
 const RES=['food','wood','stone','gold','sci'];
-const RIC={food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',sci:'🔬'};
+const RNM={food:'Food',wood:'Wood',stone:'Stone',gold:'Gold',sci:'Science'};const RIC={food:'🌾',wood:'🪵',stone:'🪨',gold:'🪙',sci:'🔬'};
 const ERAS=['Stone','Bronze','Iron','Medieval','Renaissance','Industrial','Modern','Information','Space'];
 const ERAC=['#a88a5c','#d08a3c','#8c9aa8','#7a5ad6','#d64a6a','#5a6470','#3aa0d8','#24d6c0','#b06bff'];
-const TER={grass:{n:'Grassland',c1:'#7fd65a',c2:'#3f9a3a',y:{food:.4,gold:.1}},forest:{n:'Forest',c1:'#3f9a4a',c2:'#1d5e2e',y:{wood:.5}},mountain:{n:'Mountain',c1:'#a7a49c',c2:'#5d5a55',y:{stone:.4,gold:.15}},desert:{n:'Desert',c1:'#f1d48a',c2:'#c79a4c',y:{gold:.35}},snow:{n:'Tundra',c1:'#f4f8ff',c2:'#a9bfd6',y:{stone:.2,sci:.1}},water:{n:'Sea',c1:'#3aa6e0',c2:'#14548f',y:{food:.3,gold:.2}}};
+const TER={grass:{n:'Grassland',c1:'#7fd65a',c2:'#3f9a3a',y:{food:.4,gold:.1,stone:.1}},forest:{n:'Forest',c1:'#3f9a4a',c2:'#1d5e2e',y:{wood:.5,stone:.05}},mountain:{n:'Mountain',c1:'#a7a49c',c2:'#5d5a55',y:{stone:.6,gold:.15}},desert:{n:'Desert',c1:'#f1d48a',c2:'#c79a4c',y:{gold:.35,stone:.2}},snow:{n:'Tundra',c1:'#f4f8ff',c2:'#a9bfd6',y:{stone:.2,sci:.1}},water:{n:'Sea',c1:'#3aa6e0',c2:'#14548f',y:{food:.3,gold:.2}}};
 const BLD={
 farm:{n:'Farm',ic:'🌾',r:{food:3},ok:['grass','desert','water'],bonus:{grass:1.5,water:1.2,desert:.7},cost:{wood:12,gold:8}},
 lumber:{n:'Lumber Camp',ic:'🪓',r:{wood:3},ok:['forest','snow'],bonus:{forest:1.6},cost:{gold:12,food:8}},
+quarry:{n:'Quarry',ic:'🪨',r:{stone:2.6},ok:['grass','desert','forest','snow'],bonus:{desert:1.3,snow:1.3},cost:{wood:10,gold:8}},
 mine:{n:'Mine',ic:'⛏️',r:{stone:2.5,gold:.6},ok:['mountain','snow','desert'],bonus:{mountain:1.6},cost:{wood:20,food:10}},
 market:{n:'Market',ic:'🏪',r:{gold:3},ok:['grass','desert','water','forest','snow','mountain'],bonus:{desert:1.4,water:1.3},cost:{wood:15,stone:8}},
 lab:{n:'Laboratory',ic:'🧪',r:{sci:1.6},ok:['grass','desert','snow','mountain','forest','water'],bonus:{snow:1.5},cost:{wood:20,stone:15,gold:20}},
@@ -302,6 +303,7 @@ function drawBuilding(c,t,x,y,time){const e=S.era,b=t.b,lv=t.bl,ec=ERAC[e];
  c.save();c.translate(x,y);c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(0,9,15,5,0,0,7);c.fill();
  if(b==='farm'){c.fillStyle='#e9c74a';for(let i=0;i<3;i++)c.fillRect(-14+i*10,-2,8,10);c.fillStyle='#b98a2a';for(let i=0;i<3;i++)c.fillRect(-14+i*10,2,8,1.5);if(e>=5){c.fillStyle='#c33';c.fillRect(6,-12,8,8);c.fillStyle='#555';c.fillRect(6,-14,8,2)}else house(c,-4,-8,ec,e)}
  else if(b==='lumber'){c.fillStyle='#8a5a2b';c.fillRect(-12,2,24,5);c.fillRect(-10,-3,20,5);c.fillStyle='#c48a4a';c.beginPath();c.arc(-12,4.5,2.5,0,7);c.arc(12,4.5,2.5,0,7);c.fill();house(c,4,-10,ec,e)}
+ else if(b==='quarry'){c.fillStyle='#8f8a84';c.beginPath();c.moveTo(-14,8);c.lineTo(-8,-6);c.lineTo(2,-2);c.lineTo(8,-10);c.lineTo(14,8);c.fill();c.fillStyle='#bdb7ae';c.fillRect(-9,2,7,5);c.fillRect(0,0,6,6);c.fillStyle='#d8d2c8';c.fillRect(-4,-4,5,4);if(e>=5){c.strokeStyle='#e0b020';c.lineWidth=2;c.beginPath();c.moveTo(8,8);c.lineTo(12,-12);c.lineTo(4,-12);c.stroke()}}
  else if(b==='mine'){c.fillStyle='#3a2f28';c.beginPath();c.arc(0,4,10,Math.PI,0);c.fill();c.fillStyle='#111';c.beginPath();c.arc(0,5,6,Math.PI,0);c.fill();c.fillStyle='#ffd76a';c.beginPath();c.arc(-9,6,2,0,7);c.arc(9,7,2.2,0,7);c.fill();if(e>=5){c.strokeStyle='#999';c.lineWidth=2;c.beginPath();c.moveTo(-6,-14);c.lineTo(0,-4);c.lineTo(6,-14);c.stroke()}}
  else if(b==='market'){if(e<5){c.fillStyle='#d4a';c.beginPath();c.moveTo(-14,-2);c.lineTo(0,-14);c.lineTo(14,-2);c.fill();c.fillStyle='#f4e2c0';c.fillRect(-11,-2,22,10);c.fillStyle='#ffd76a';c.beginPath();c.arc(0,3,3.5,0,7);c.fill()}else{tower(c,-6,ec,14+Math.min(lv,10),e);tower(c,6,ec,9+Math.min(lv,8),e)}}
  else if(b==='lab'){c.fillStyle='#dde8ff';c.fillRect(-10,-6,20,14);c.fillStyle=e>=6?'#9ef':'#6cf';c.beginPath();c.arc(0,-6,10,Math.PI,0);c.fill();c.fillStyle='rgba(120,220,255,'+(.5+.5*Math.sin(time*3+t.ph))+')';c.beginPath();c.arc(0,-9,3,0,7);c.fill()}
@@ -375,7 +377,7 @@ function draw(time){if(G.dirty)redrawTerrain();const c=cx;c.setTransform(DPR,0,0
  if(flash>.02){c.fillStyle='rgba(255,230,150,'+flash*.5+')';c.fillRect(0,0,W,H)}
  const v=c.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,H*.75);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.45)');c.fillStyle=v;c.fillRect(0,0,W,H)}
 function fmtT(s){s=Math.max(0,s);const h=Math.floor(s/3600),m=Math.floor(s/60)%60,ss=s%60;return(h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+ss.toFixed(1).padStart(4,'0')}
-function renderTop(){$('res').innerHTML=RES.map(k=>`<div class="chip"><b>${RIC[k]} ${fmt(S.res[k])}</b><i>+${fmt(RATE[k])}/s</i></div>`).join('');
+function renderTop(){$('res').innerHTML=RES.map(k=>`<div class="chip"><i style="color:#9ab">${RNM[k]}</i><b>${RIC[k]} ${fmt(S.res[k])}</b><i>+${fmt(RATE[k])}/s</i></div>`).join('');
  $('era').textContent=ERAS[S.era]+' Era';$('mapl').textContent='🌍 W'+S.ml+' · '+OWN+' tiles';$('army').textContent='⚔️ '+fmt(armyPow());$('timer').textContent='⏱ '+fmtT(S.rt);
  const ev=S.evs[0];$('evb').style.display=ev?'block':'none';if(ev)$('evb').textContent=ev.n.split('!')[0]+'! '+Math.ceil(ev.t)+'s';
  const ti=$('tabs').children;let techAv=false;for(let i=0;i<4;i++)if(techOk(S.era,i)&&S.res.sci>=techCost(S.era,i))techAv=true;
