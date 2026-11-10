@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gleamshelf">
+<meta name="theme-color" content="#0c1220">
+<title>Gleamshelf</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#0c1220;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;color:#f3efe6;touch-action:none}
+#cv{position:fixed;inset:0;width:100%;height:100%}
+.glass{background:rgba(14,20,36,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,220,150,.14);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+#top{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 6px);border-radius:16px;padding:7px 8px 6px;z-index:5}
+#stats{display:flex;gap:4px}
+.chip{flex:1;min-width:0;background:rgba(255,255,255,.06);border-radius:10px;padding:3px 4px;text-align:center}
+.chip b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip i{font-style:normal;font-size:9px;color:#c9b48a;display:block}
+#bar2{display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-top:4px;padding:0 2px;gap:6px}
+#quota{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;position:relative}
+#quota i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f6d365,#fda085);border-radius:5px;transition:width .2s}
+#quota span{position:absolute;inset:0;font-size:8px;text-align:center;line-height:8px;font-weight:800;color:#1a1408;mix-blend-mode:overlay}
+#timer{font-variant-numeric:tabular-nums;color:#9cd1ff;font-weight:700}
+button{font:inherit;color:#fff;border:0;border-radius:12px;padding:9px 12px;font-size:13px;font-weight:800;background:linear-gradient(180deg,#e0a44a,#b06a14);box-shadow:0 2px 0 #6a3e08,inset 0 1px 0 rgba(255,255,255,.35)}
+button:active{transform:translateY(1px)}
+button.g{background:linear-gradient(180deg,#3ecf7a,#1c8a48);box-shadow:0 2px 0 #0f5a2c,inset 0 1px 0 rgba(255,255,255,.3)}
+button.b{background:linear-gradient(180deg,#4c8dff,#2a4fc8);box-shadow:0 2px 0 #1a3280,inset 0 1px 0 rgba(255,255,255,.3)}
+button.p{background:linear-gradient(180deg,#c084fc,#7c3aed);box-shadow:0 2px 0 #4c1d95,inset 0 1px 0 rgba(255,255,255,.3)}
+button.r{background:linear-gradient(180deg,#ff6b6b,#c0392b);box-shadow:0 2px 0 #7a1f16,inset 0 1px 0 rgba(255,255,255,.3)}
+button.dim{background:linear-gradient(180deg,#3a4558,#2a3344);box-shadow:0 2px 0 #1a2030,inset 0 1px 0 rgba(255,255,255,.12);color:#d0d6e0}
+button:disabled{opacity:.45;filter:grayscale(.5)}
+button small{display:block;font-weight:600;font-size:10px;opacity:.9}
+#dock{position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 8px);border-radius:18px;padding:8px;z-index:5;display:none}
+#types{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px}
+.tb{flex:0 0 auto;min-width:58px;text-align:center;border-radius:12px;padding:6px 7px;background:rgba(255,255,255,.06);font-size:11px;font-weight:800;border:2px solid transparent}
+.tb.on{border-color:#f6d365;background:rgba(246,211,101,.15)}
+.tb .ic{font-size:20px;display:block}
+#hud2{display:flex;gap:6px;margin-top:6px}
+#hud2 button{flex:1}
+#sheet,#modal{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55)}
+#sheet .box,#modal .box{border-radius:20px;padding:14px;width:100%;max-width:420px;max-height:88vh;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#sheet h2,#modal h2{margin:0 0 8px;font-size:20px;text-align:center}
+.cards{display:flex;flex-direction:column;gap:8px}
+.card{display:flex;gap:8px;align-items:center;background:rgba(255,255,255,.05);border-radius:14px;padding:9px;border:1px solid rgba(255,255,255,.08)}
+.card .ic{font-size:28px;width:40px;text-align:center}
+.card .tx{flex:1;min-width:0;font-size:12px;color:#c9c3b6}
+.card .tx b{display:block;color:#fff;font-size:14px}
+.card.common{border-color:#9aa}
+.card.rare{border-color:#5ab0ff}
+.card.epic{border-color:#c084fc}
+.card.legendary{border-color:#f6d365;box-shadow:0 0 12px rgba(246,211,101,.25)}
+.row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border-radius:12px;padding:8px;margin-bottom:6px}
+.row .tx{flex:1;font-size:12px;color:#c9c3b6}.row .tx b{display:block;color:#fff;font-size:13.5px}
+.seg{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.seg div{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.07);font-size:12px;font-weight:800}
+.seg div.on{background:#b06a14}
+#toasts{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 92px);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:30}
+.toast{padding:7px 12px;border-radius:12px;font-size:12.5px;font-weight:800;animation:tin .25s ease-out}
+@keyframes tin{from{transform:translateY(-8px);opacity:0}}
+#title{position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:20px 16px calc(env(safe-area-inset-bottom) + 24px);background:linear-gradient(180deg,transparent 30%,#0c1220 70%)}
+#title h1{font-size:42px;margin:0;letter-spacing:-1px;background:linear-gradient(180deg,#fff6d0,#f6d365 40%,#c9a227);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;font-weight:900}
+#title p{margin:4px 0 14px;color:#c9b48a;text-align:center;font-size:14px}
+#title .btns{display:flex;flex-direction:column;gap:8px;width:100%;max-width:360px}
+.rare-tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.common .rare-tag{color:#bbb}.rare .rare-tag{color:#7ec8ff}.epic .rare-tag{color:#e0b0ff}.legendary .rare-tag{color:#f6d365}
+#aim{position:fixed;pointer-events:none;z-index:4;display:none}
+#banner{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);font-size:28px;font-weight:900;text-align:center;pointer-events:none;z-index:12;text-shadow:0 4px 16px #000;opacity:0;transition:opacity .2s}
+#autoBtn.on{box-shadow:0 0 14px #3dff9a,0 2px 0 #0f5a2c;background:linear-gradient(180deg,#3ecf7a,#1c8a48)}
+table{width:100%;font-size:11.5px;border-collapse:collapse}td{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.07)}
+.gn{color:#6dff9a}.rd{color:#ff8b8b}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="aim"></div>
+<div id="banner"></div>
+<div id="top" class="glass" style="display:none">
+  <div id="stats"></div>
+  <div id="bar2"><span id="floorlab"></span><div id="quota"><i></i><span></span></div><span id="timer"></span></div>
+</div>
+<div id="dock" class="glass">
+  <div id="types"></div>
+  <div id="hud2">
+    <button class="dim" id="pauseBtn" onclick="openPause()">❚❚</button>
+    <button class="g" id="autoBtn" onclick="toggleAuto()" style="display:none">🤖 AUTO</button>
+    <button class="b" id="dropHint">Drag to drop</button>
+  </div>
+</div>
+<div id="toasts"></div>
+<div id="title">
+  <div style="font-size:72px;line-height:1;filter:drop-shadow(0 8px 16px #000)">🐦‍⬛</div>
+  <h1>Gleamshelf</h1>
+  <p>Help Pip the magpie hoard shiny coins.<br>Push them off the shelf — don't lose them in the gutters.</p>
+  <div class="btns">
+    <button class="g" onclick="startRun(0)">▶ New run</button>
+    <button class="b" onclick="openMeta()">🪶 Nest & Unlocks</button>
+    <button class="dim" onclick="openMore()">⭐ Speedrun · Trophies · Settings</button>
+  </div>
+  <div id="titleMeta" style="margin-top:10px;font-size:12px;color:#9aa3b5"></div>
+</div>
+<div id="sheet"><div class="box glass" id="sbox"></div></div>
+<div id="modal"><div class="box glass" id="mbox"></div></div>
+<script>
+"use strict";
+const VER="1.0";
+const $=id=>document.getElementById(id);
+const cv=$("cv"), cx=cv.getContext("2d");
+let W=0,H=0,DPR=1;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+"px";cv.style.height=H+"px"}
+addEventListener("resize",resize);resize();
+// ---------- data ----------
+const SK="gleamshelf_v1";
+const SUF=["","K","M","B","T","Qa","Qi"];
+function fmt(n){if(!isFinite(n))return "∞";if(n<0)return "-"+fmt(-n);if(n<10)return n<1&&n>0?n.toFixed(1):String(Math.round(n*10)/10);if(n<1000)return String(Math.floor(n));const e=Math.floor(Math.log10(n)/3);return e<SUF.length?(n/Math.pow(1000,e)).toFixed(1).replace(/\.0$/,"")+SUF[e]:n.toExponential(1)}
+function fmtT(s){s=Math.max(0,s);const m=Math.floor(s/60),ss=s%60;return m+":"+ss.toFixed(1).padStart(4,"0")}
+const RAR=["common","rare","epic","legendary"];
+const RCOL={common:"#bbb",rare:"#5ab0ff",epic:"#c084fc",legendary:"#f6d365"};
+const CTYPES={
+  std:{n:"Coin",ic:"🪙",col:"#d7a441",rim:"#8a5a14",val:1},
+  silver:{n:"Silver",ic:"⚪",col:"#cfd6e0",rim:"#6a7380",val:2},
+  gold:{n:"Gold",ic:"🟡",col:"#ffe27a",rim:"#b8860b",val:5},
+  bomb:{n:"Bomb",ic:"💣",col:"#3a3a3a",rim:"#111",val:1,spec:1},
+  magnet:{n:"Magnet",ic:"🧲",col:"#c0392b",rim:"#5a1010",val:1,spec:1},
+  multi:{n:"Multiplier",ic:"✖️",col:"#9b59b6",rim:"#4a2060",val:2,spec:1},
+  golden:{n:"Gleam",ic:"✨",col:"#fff3b0",rim:"#e0a800",val:12,spec:1},
+  sticky:{n:"Sticky",ic:"🫧",col:"#88e0a8",rim:"#1e7a44",val:1,spec:1},
+  split:{n:"Splitter",ic:"➗",col:"#7ec8ff",rim:"#1a4a80",val:1,spec:1}
+};
+// Shop catalog
+const SHOP=[
+  {k:"drops",n:"Extra Pocket",d:"+1 drop per round",ic:"👜",r:0,c:6,stack:5,fn:s=>s.drops++},
+  {k:"life",n:"Spare Heart",d:"+1 life",ic:"❤️",r:1,c:14,stack:2,fn:s=>s.lives++},
+  {k:"copper",n:"Copper Rush",d:"Standard coins +1 value",ic:"🪙",r:0,c:8,stack:4,fn:s=>s.vstd++},
+  {k:"silv",n:"Sterling",d:"Silver coins +1 value",ic:"⚪",r:1,c:10,stack:3,fn:s=>s.vsil++},
+  {k:"au",n:"Gilding",d:"Gold coins +2 value",ic:"🟡",r:1,c:12,stack:3,fn:s=>s.vgld+=2},
+  {k:"bomb",n:"Bomb Kit",d:"+2 Bomb coins",ic:"💣",r:0,c:7,stack:6,fn:s=>addBag(s,"bomb",2)},
+  {k:"magnet",n:"Lodestone",d:"+2 Magnet coins",ic:"🧲",r:1,c:9,stack:5,fn:s=>addBag(s,"magnet",2)},
+  {k:"multi",n:"Times Table",d:"+2 Multiplier coins",ic:"✖️",r:1,c:11,stack:4,fn:s=>addBag(s,"multi",2)},
+  {k:"gleam",n:"Sunflake",d:"+1 Gleam coin (huge value)",ic:"✨",r:2,c:16,stack:4,fn:s=>addBag(s,"golden",1)},
+  {k:"sticky",n:"Honey Drop",d:"+2 Sticky coins",ic:"🫧",r:0,c:8,stack:5,fn:s=>addBag(s,"sticky",2)},
+  {k:"split",n:"Splitter Pack",d:"+2 Splitter coins",ic:"➗",r:1,c:10,stack:5,fn:s=>addBag(s,"split",2)},
+  {k:"wide",n:"Wide Shelf",d:"Pusher 18% wider",ic:"📏",r:1,c:14,stack:2,fn:s=>s.wide+=.18},
+  {k:"walls",n:"Gutter Rails",d:"Side walls bounce coins back",ic:"🚧",r:2,c:22,stack:1,fn:s=>s.walls=1},
+  {k:"slots",n:"Bonus Slots",d:"Two front slots: 3× payout",ic:"🎰",r:2,c:18,stack:1,fn:s=>s.slots=1},
+  {k:"wheel",n:"Jackpot Bell",d:"A jackpot gem spawns each round",ic:"🔔",r:2,c:20,stack:1,fn:s=>s.wheel=1},
+  {k:"prizes",n:"Prize Nest",d:"More prize tokens on the table",ic:"🎁",r:1,c:12,stack:3,fn:s=>s.prizes++},
+  {k:"fast",n:"Quick Shelf",d:"Pusher cycles 20% faster",ic:"⚡",r:0,c:9,stack:3,fn:s=>s.spd+=.2},
+  {k:"slow",n:"Heavy Push",d:"Pusher slower, packs tighter",ic:"🐢",r:1,c:10,stack:2,fn:s=>s.spd-=.15},
+  {k:"fric",n:"Felt Polish",d:"Less friction, longer slides",ic:"✨",r:1,c:11,stack:2,fn:s=>s.fric+=.04},
+  {k:"grip",n:"Rubber Felt",d:"More friction, safer piles",ic:"🧯",r:0,c:8,stack:2,fn:s=>s.fric-=.05},
+  {k:"aim",n:"Steady Beak",d:"Drops scatter less",ic:"🎯",r:0,c:7,stack:3,fn:s=>s.scatter*=.6},
+  {k:"boom",n:"Bigger Boom",d:"Bombs knock 40% harder",ic:"💥",r:1,c:12,stack:2,fn:s=>s.boom+=.4},
+  {k:"mag2",n:"Super Magnet",d:"Magnets pull 50% stronger",ic:"🧲",r:1,c:12,stack:2,fn:s=>s.mag+=.5},
+  {k:"xtra",n:"Overspill",d:"Cashed coins give +15% bonus",ic:"🌊",r:1,c:13,stack:3,fn:s=>s.over+=.15},
+  {k:"lucky",n:"Lucky Lip",d:"+12% chance gutter coins bounce in",ic:"🍀",r:1,c:14,stack:3,fn:s=>s.lucky+=.12},
+  {k:"splitn",n:"Extra Shard",d:"Splitters make +1 coin",ic:"💠",r:2,c:16,stack:2,fn:s=>s.splitn++},
+  {k:"multit",n:"Long Multiply",d:"Multiplier aura lasts longer",ic:"⏳",r:1,c:11,stack:2,fn:s=>s.multit+=2},
+  {k:"startc",n:"Table Stash",d:"+4 coins already on the shelf",ic:"📦",r:0,c:8,stack:4,fn:s=>s.startc+=4},
+  {k:"heal",n:"Tea & Twigs",d:"Heal 1 life (if missing)",ic:"🍵",r:0,c:9,stack:99,fn:s=>{s.lives=Math.min(s.livesMax,s.lives+1)}},
+  {k:"reroll",n:"Shop Voucher",d:"+1 free reroll now",ic:"🎟️",r:0,c:5,stack:99,fn:s=>s.rerolls++},
+  {k:"interest",n:"Nest Egg",d:"+1 shine per 8 unspent after the round",ic:"🥚",r:2,c:15,stack:2,fn:s=>s.interest++},
+  {k:"auto",n:"Beak Automaton",d:"Unlock AUTO dropper this run",ic:"🤖",r:2,c:25,stack:1,need:s=>!s.autoOn&&M.unlocks.auto,fn:s=>{s.autoOn=1;showAuto()}},
+  {k:"crit",n:"Jackpot Fever",d:"Cashed gold has 8% chance to ×5",ic:"🤑",r:2,c:18,stack:2,fn:s=>s.crit+=.08},
+  {k:"weight",n:"Lead Core",d:"Dropped coins are heavier, push better",ic:"⚙️",r:1,c:10,stack:2,fn:s=>s.mass+=.4},
+  {k:"front",n:"Lip Grease",d:"Front edge is slightly closer",ic:"➡️",r:2,c:20,stack:1,fn:s=>s.lip+=8}
+];
+const UNLOCKS=[
+  {k:"pocket",n:"Deeper Pockets",d:"Start every run with +1 drop",ic:"👜",c:15,max:5},
+  {k:"heart",n:"Sturdy Nest",d:"Start with +1 life",ic:"❤️",c:40,max:2},
+  {k:"bomb0",n:"Firecracker",d:"Start with 1 Bomb",ic:"💣",c:25,max:3},
+  {k:"mag0",n:"Scrap Magnet",d:"Start with 1 Magnet",ic:"🧲",c:30,max:3},
+  {k:"spl0",n:"Cracked Coin",d:"Start with 1 Splitter",ic:"➗",c:30,max:3},
+  {k:"gold0",n:"Seed Gold",d:"Start with 1 Gold coin",ic:"🟡",c:20,max:4},
+  {k:"lucky0",n:"Charm String",d:"Permanent +5% gutter bounce",ic:"🍀",c:35,max:4},
+  {k:"shop3",n:"Bigger Stall",d:"Shop offers 4 items",ic:"🛒",c:60,max:1},
+  {k:"reroll0",n:"Haggler",d:"Start with a free reroll",ic:"🎟️",c:25,max:3},
+  {k:"shine",n:"Gleam Sense",d:"+10% feathers from runs",ic:"🪶",c:20,max:5},
+  {k:"auto",n:"Beak Automaton",d:"Unlock AUTO dropper (toggle in runs)",ic:"🤖",c:80,max:1},
+  {k:"stash0",n:"Pre-stacked",d:"+3 starting table coins",ic:"📦",c:20,max:4},
+  {k:"crestG",n:"Crest Collector",d:"+15% Crests on Moult",ic:"👑",c:50,max:5,need:"moult"},
+  {k:"open",n:"Open Floor",d:"Start runs at floor 3",ic:"🚪",c:100,max:1,need:"f10"}
+];
+const BLESS=[
+  {k:"yield",n:"Sun Blessing",d:"+25% coin values",ic:"☀️",c:1,g:1.7,max:20},
+  {k:"dropsB",n:"Sky Pockets",d:"+1 starting drop",ic:"👜",c:1,g:1.8,max:8},
+  {k:"lifeB",n:"Phoenix Down",d:"+1 starting life",ic:"🔥",c:2,g:2,max:3},
+  {k:"feath",n:"Plume Harvest",d:"+25% feathers gained",ic:"🪶",c:1,g:1.7,max:15},
+  {k:"shopB",n:"Royal Discount",d:"Shop prices −8%",ic:"💎",c:2,g:1.9,max:5},
+  {k:"autoB",n:"Clockwork Beak",d:"AUTO drops 15% faster",ic:"🤖",c:2,g:2,max:4},
+  {k:"crest2",n:"Heirloom",d:"+20% Crests",ic:"👑",c:2,g:1.8,max:10},
+  {k:"starG",n:"Starlight",d:"+20% Stars on Skyward",ic:"⭐",c:3,g:2,max:8}
+];
+const STARS=[
+  {k:"cosV",n:"Cosmic Value",d:"×2 all coin values",ic:"🌌",c:1,g:2,max:10},
+  {k:"cosD",n:"Endless Pockets",d:"+2 starting drops",ic:"♾️",c:1,g:2,max:8},
+  {k:"time",n:"Time Feather",d:"+20% AUTO & pusher speed",ic:"⏳",c:2,g:2.2,max:4},
+  {k:"crest3",n:"Eternal Nest",d:"×1.5 Crests & feathers",ic:"🪺",c:2,g:2,max:10},
+  {k:"startF",n:"Skip Ahead",d:"Start +2 floors",ic:"🚀",c:3,g:2.5,max:3}
+];
+const ACH=[
+  ["first","First Push","Cash your first coin",s=>s.st.cashed>=1],
+  ["q1","Quota Rookie","Clear a round",s=>s.st.rounds>=1],
+  ["q10","Shelf Veteran","Clear 10 rounds (lifetime)",s=>s.st.rounds>=10],
+  ["boss1","Boss Beak","Beat a boss floor",s=>s.st.bosses>=1],
+  ["vault","Vault Opened","Beat the Vault Keeper",s=>s.st.vaults>=1],
+  ["vault3","Master Thief","Beat the Vault 3 times",s=>s.st.vaults>=3],
+  ["gutter0","Sure-footed","Clear a round with no gutter losses",s=>s.st.clean>=1],
+  ["bomb10","Pyrotechnician","Detonate 25 bombs",s=>s.st.bombs>=25],
+  ["jack","Jackpot!","Hit the jackpot wheel",s=>s.st.jacks>=1],
+  ["big","Big Score","Cash 50+ in one coin",s=>s.st.big>=1],
+  ["moult","First Moult","Prestige once",s=>s.st.moults>=1],
+  ["sky","Skyward","Skyward once",s=>s.st.skys>=1],
+  ["speed","Speed Beak","Beat the Vault under 25 min",s=>s.lb.some(r=>r.t<1500)],
+  ["rich","Feather Bed","Hold 500 feathers",s=>s.feathers>=500],
+  ["autoa","Hands-free","Unlock AUTO",s=>s.unlocks.auto>=1],
+  ["end","Endless","Reach endless floor 25",s=>s.st.bestF>=25],
+  ["shop20","Hoarder","Buy 40 shop items",s=>s.st.buys>=40],
+  ["life","Comeback","Win a round on your last life",s=>s.st.comeback>=1],
+  ["gold20","Midas Beak","Cash 80 gold coins",s=>s.st.golds>=80],
+  ["split","Shard Storm","Spawn 100 splitter shards",s=>s.st.shards>=100]
+];
+function addBag(s,k,n){s.bag[k]=(s.bag[k]||0)+n}
+function U(k){return M.unlocks[k]||0}
+function B(k){return M.bless[k]||0}
+function ST(k){return M.starsP[k]||0}
+
+// ---------- meta state ----------
+function freshMeta(){return{v:1,feathers:0,crests:0,stars:0,unlocks:{},bless:{},starsP:{},ach:{},st:{cashed:0,rounds:0,bosses:0,vaults:0,clean:0,bombs:0,jacks:0,big:0,moults:0,skys:0,buys:0,comeback:0,golds:0,shards:0,bestF:1,runs:0},lb:[],set:{fx:1,shake:1,snd:0},bestGain:0}}
+let M=freshMeta();
+function loadMeta(){try{const d=JSON.parse(localStorage.getItem(SK));if(d&&d.v){M=Object.assign(freshMeta(),d);M.st=Object.assign(freshMeta().st,d.st||{});M.set=Object.assign(freshMeta().set,d.set||{})}}catch(e){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify(M))}catch(e){}}
+loadMeta();
+
+// ---------- run state ----------
+let G=null; // gameplay
+function baseRun(){
+  const drops=12+U("pocket")+B("dropsB")+2*ST("cosD");
+  const lives=3+U("heart")+B("lifeB");
+  const bag={std:99,silver:0,gold:U("gold0"),bomb:U("bomb0"),magnet:U("mag0"),multi:0,golden:0,sticky:0,split:U("spl0")};
+  return{floor:1+2*U("open")+2*ST("startF"),quota:0,score:0,drops,dropsMax:drops,lives,livesMax:lives,shine:0,bag,relics:[],
+    vstd:1,vsil:2,vgld:5,wide:0,walls:0,slots:0,wheel:0,prizes:0,spd:1,fric:.12,scatter:18,boom:1,mag:1,over:0,lucky:.05*U("lucky0"),splitn:0,multit:3,startc:12+3*U("stash0"),
+    interest:0,autoOn:0,crit:0,mass:1,lip:0,rerolls:U("reroll0"),shopOff:0,
+    rt:0,splits:[],guttered:0,cashedR:0,boss:0,endless:0,over:0,won:0}
+}
+function quotaFor(f,boss){return Math.round(10*Math.pow(1.11,f-1)*(boss?1.3:1))}
+function isBoss(f){return f%5===0}
+function bossQuirk(f){
+  if(f===5)return{n:"Tight Purse",d:"Fewer drops, tighter quota.",fn:r=>{r.drops=Math.max(5,r.drops-3)}};
+  if(f===10)return{n:"Greasy Shelf",d:"Coins are slippery. Watch the gutters.",fn:r=>{r.fric+=.07}};
+  if(f===15)return{n:"Narrow Gate",d:"The drop window is slim.",fn:r=>{r.narrow=1}};
+  if(f===20)return{n:"The Vault Keeper",d:"A huge quota. Clear it to open the vault.",fn:r=>{}};
+  return{n:"Mutating Vault",d:"Faster pusher, denser quota.",fn:r=>{r.spd+=.25}};
+}
+
+// ---------- physics table ----------
+const TW=220, TL=148, PMIN=36, PMAX=118, PR=11; // table width, length, pusher travel
+let coins=[], prizes=[], parts=[], floats=[], pusher=PMIN, pvel=0, pdir=1, phase=0;
+let shake=0, flash=0, aimX=0, aiming=0, selType="std";
+let slotsHit=[0,0];
+
+function halfW(z){return TW/2}
+function onTable(c){return Math.abs(c.x)<=halfW(c.z)+c.r && c.z>=-4 && c.z<=TL+8 && c.y<=2}
+
+function valOf(c){
+  let v=c.base||1;
+  if(c.kind==="std")v=G.vstd;
+  if(c.kind==="silver")v=G.vsil;
+  if(c.kind==="gold")v=G.vgld;
+  if(c.kind==="golden")v=12+G.vgld;
+  v*=(1+.25*B("yield"))*Math.pow(2,ST("cosV"));
+  if(c.mult)v*=c.mult;
+  return Math.round(v*10)/10;
+}
+
+function mkCoin(x,z,kind,extra){
+  const T=CTYPES[kind]||CTYPES.std;
+  const r=kind==="golden"?13:kind==="gold"?11:kind==="split"?8:kind==="bomb"?10:10;
+  const c={x,z,y:extra&&extra.y!=null?extra.y:0,vx:0,vz:0,vy:extra&&extra.vy||0,r,kind,mult:0,stick:0,magt:0,dead:0,spin:Math.random()*6,base:T.val,mass:G?G.mass:1};
+  if(extra)Object.assign(c,extra);
+  return c;
+}
+function spawnOnTable(n,z0,z1){
+  for(let i=0;i<n;i++){
+    const z=z0+Math.random()*(z1-z0),x=(Math.random()-0.5)*TW*0.7;
+    const roll=Math.random();
+    const k=roll>.92?"gold":roll>.7?"silver":"std";
+    coins.push(mkCoin(x,z,k));
+  }
+}
+
+function resetTable(){
+  coins=[];prizes=[];parts=[];floats=[];pusher=PMIN;phase=0;pdir=1;slotsHit=[0,0];
+  const n=G.startc;
+  spawnOnTable(Math.floor(n*.45),20,pusher-4);
+  spawnOnTable(Math.ceil(n*.55),PMAX+2,TL-16);
+  if(G.prizes)for(let i=0;i<G.prizes;i++)prizes.push({x:(Math.random()-.5)*TW*.5,z:80+Math.random()*70,r:12,k:"gift"});
+  if(G.wheel)prizes.push({x:(Math.random()-.5)*40,z:70+Math.random()*50,r:13,k:"gem"});
+}
+
+function burst(x,z,col,n,up){if(!M.set.fx)return;for(let i=0;i<n;i++){const a=Math.random()*6.28,s=30+Math.random()*90;parts.push({x,z,y:up||0,vx:Math.cos(a)*s,vz:Math.sin(a)*s,vy:40+Math.random()*80,l:.4+Math.random()*.5,c:col,r:1.5+Math.random()*2})}}
+function floatT(x,z,txt,col){floats.push({x,z,y:8,txt,c:col,l:1.1})}
+
+let AC=null;
+function sfx(k){if(!M.set.snd)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();const f={clink:880+Math.random()*400,cash:520,gutter:180,bomb:90,jack:1200,ok:660}[k]||400;o.type=k==="bomb"?"sawtooth":k==="clink"?"triangle":"sine";o.frequency.value=f;g.gain.setValueAtTime(k==="clink"?.04:.07,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+(k==="bomb"?.3:.16));o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.32)}catch(e){}}
+
+function cashCoin(c,slot){
+  if(c.dead)return;c.dead=1;
+  let v=valOf(c)*(1+G.over);
+  if(slot)v*=3;
+  if(c.kind==="gold"||c.kind==="golden"){M.st.golds++;if(Math.random()<G.crit)v*=5}
+  if(v>=50)M.st.big=1;
+  v=Math.round(v);
+  G.score+=v;G.cashedR+=v;G.shine+=Math.max(1,Math.round(v*.35));M.st.cashed++;
+  burst(c.x,TL, c.kind==="golden"?"#fff3b0":"#f6d365", 14, 4);
+  floatT(c.x,TL-2,"+"+v, slot?"#7ec8ff":"#f6d365");
+  shake=Math.min(10,shake+ (slot?5:2));sfx("cash");if(G.score>=G.quota)checkRoundEnd();
+}
+function gutterCoin(c){
+  if(c.dead)return;
+  if(Math.random()<G.lucky){c.x=Math.sign(c.x||1)*(halfW(c.z)-c.r-2);c.vx*=-.4;c.vz*=.5;floatT(c.x,c.z,"Lucky!","#6dff9a");return}
+  if(G.walls){c.x=Math.sign(c.x)*(halfW(c.z)-c.r-1);c.vx*=-.55;return}
+  c.dead=1;G.guttered++;burst(c.x,c.z,"#889",8);floatT(c.x,c.z,"💔","#ff8b8b");sfx("gutter");
+}
+function explode(c){
+  M.st.bombs++;sfx("bomb");shake=12;flash=.6;burst(c.x,c.z,"#ff9f43",28,6);
+  const R=70*G.boom;
+  for(const o of coins){if(o.dead||o===c)continue;const dx=o.x-c.x,dz=o.z-c.z,d=Math.hypot(dx,dz)+.01;if(d<R){const f=(1-d/R)*220*G.boom/o.mass;o.vx+=dx/d*f;o.vz+=dz/d*f;o.y+=4}}
+  c.dead=1;
+}
+function doMagnet(c,dt){
+  const R=80*G.mag;
+  for(const o of coins){if(o.dead||o===c)continue;const dx=c.x-o.x,dz=c.z-o.z,d=Math.hypot(dx,dz)+.01;if(d<R){const f=140*G.mag*dt/d;o.vx+=dx*f;o.vz+=dz*f}}
+}
+function applyMulti(c){
+  for(const o of coins){if(o.dead||o===c)continue;if(Math.hypot(o.x-c.x,o.z-c.z)<o.r+c.r+16){o.mult=Math.max(o.mult||0,2);o.mt=G.multit}}
+}
+function splitMe(c){
+  const n=3+G.splitn;M.st.shards+=n;
+  for(let i=0;i<n;i++){const a=i/n*6.28,o=mkCoin(c.x+Math.cos(a)*8,c.z+Math.sin(a)*8,"std",{y:4,vx:Math.cos(a)*80,vz:Math.sin(a)*80,vy:30});o.r=7;coins.push(o)}
+  c.dead=1;burst(c.x,c.z,"#7ec8ff",12);
+}
+
+function stepPhysics(dt){
+  const R=G||{spd:1,fric:.12,lip:0,lucky:0,walls:0,slots:0,boom:1,mag:1,mass:1,wide:0,over:0,crit:0,multit:3,splitn:0,vstd:1,vsil:2,vgld:5};
+  const spd=(R.spd||1)*(1+.2*ST("time"));
+  // pusher: 70% extend, 30% retract
+  const cycle=3.2/Math.max(.45,spd);
+  phase+=dt/cycle;if(phase>=1)phase-=1;
+  const t=phase<0.7?phase/0.7:1-(phase-0.7)/0.3;
+  const ease=t*t*(3-2*t);
+  const np=PMIN+(PMAX-PMIN)*ease;
+  const dP=np-pusher;pusher=np;
+
+  const fr=Math.max(.04,Math.min(.22,R.fric));
+  const damp=Math.pow(1-fr,dt*60);
+  const pushW=TW/2*(1+(R.wide||0));
+
+  for(const c of coins){
+    if(c.dead)continue;
+    // shelf carry / face push
+    const onShelf=c.y<=0.5 && c.z+c.r*0.2<=pusher+0.1 && Math.abs(c.x)<=pushW+c.r;
+    if(onShelf){
+      if(dP>0)c.z+=dP;
+      else if(c.z<pusher)c.z+=dP;
+    }else if(c.y<=0.5 && dP>0){
+      const face=pusher;
+      if(c.z-c.r<face && c.z+c.r>face-20){
+        c.z=Math.max(c.z,face+c.r*0.85);
+        c.vz=Math.max(c.vz,dP/Math.max(dt,.008)*0.55);
+      }
+    }
+    // gravity if airborne
+    if(c.y>0||c.vy>0){c.vy-=520*dt;c.y+=c.vy*dt;if(c.y<=0){c.y=0;if(c.vy<-80){c.vy*=-0.25;sfx("clink")}else c.vy=0;
+      if(c.landed!==1){c.landed=1;onLand(c)}
+    }}
+    c.x+=c.vx*dt;c.z+=c.vz*dt;c.spin+=dt*c.vx*0.05;
+    if(c.y<=0){c.vx*=damp;c.vz*=damp;if(Math.hypot(c.vx,c.vz)<3){c.vx=0;c.vz=0}}
+    // back wall
+    if(c.z-c.r<2){c.z=2+c.r;c.vz=Math.abs(c.vz)*0.3}
+    // specials ticking
+    if(c.kind==="magnet"&&c.y<=0&&G)doMagnet(c,dt);
+    if(c.kind==="sticky"&&c.y<=0){
+      for(const o of coins){if(o===c||o.dead)continue;const d=Math.hypot(o.x-c.x,o.z-c.z);if(d<c.r+o.r+2){o.vx+=(c.vx-o.vx)*0.15;o.vz+=(c.vz-o.vz)*0.15}}
+    }
+    if(c.mt){c.mt-=dt;if(c.mt<=0)c.mult=0}
+    // sides / front
+    if(c.z+c.r*0.4>TL-(R.lip||0)){ // falling off front
+      if(!G){c.dead=1;continue}
+      let slot=0;
+      if(R.slots){const n=(c.x+TW/2)/TW;if(Math.abs(n-0.28)<.06||Math.abs(n-0.72)<.06)slot=1}
+      cashCoin(c,slot);continue;
+    }
+    if(Math.abs(c.x)+c.r*0.6>halfW(c.z)+2){if(!G){c.dead=1;continue}gutterCoin(c)}
+  }
+  // prize tokens get pushed too
+  if(!G){coins=coins.filter(c=>!c.dead);return;}
+  for(const p of prizes){
+    p.vx=p.vx||0;p.vz=p.vz||0;
+    const onShelf=p.z+8<=pusher;
+    if(onShelf){if(dP>0)p.z+=dP;else if(p.z<pusher)p.z+=dP}
+    else if(dP>0&&p.z-12<pusher&&p.z>pusher-16){p.z=pusher+12;p.vz=Math.max(p.vz,dP/dt*0.4)}
+    p.x+=p.vx*dt;p.z+=p.vz*dt;p.vx*=damp;p.vz*=damp;
+    if(p.z>TL-4){collectPrize(p);p.dead=1}
+    if(Math.abs(p.x)>halfW(p.z)+8){p.dead=1;floatT(p.x,p.z,"lost","#888")}
+    // collide with coins lightly
+    for(const c of coins){if(c.dead)continue;const dx=c.x-p.x,dz=c.z-p.z,d=Math.hypot(dx,dz),min=c.r+p.r;if(d<min&&d>0){const o=(min-d);c.x+=dx/d*o*.5;c.z+=dz/d*o*.5;p.x-=dx/d*o*.5;p.z-=dz/d*o*.5;const vn=((c.vx-p.vx)*dx+(c.vz-p.vz)*dz)/d;if(vn<0){c.vx-=vn*dx/d;c.vz-=vn*dz/d;p.vx+=vn*dx/d;p.vz+=vn*dz/d}}}
+  }
+  prizes=prizes.filter(p=>!p.dead);
+
+  // coin-coin collisions (spatial bins)
+  const BIN=24, map=new Map();
+  const key=(x,z)=>((x/BIN)|0)+","+((z/BIN)|0);
+  for(let i=0;i<coins.length;i++){const c=coins[i];if(c.dead||c.y>8)continue;const kx=(c.x/BIN)|0,kz=(c.z/BIN)|0;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const k=(kx+a)+","+(kz+b);if(!map.has(k))map.set(k,[]);map.get(k).push(i)}}
+  const seen=new Set();
+  for(const arr of map.values()){
+    for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+      const a=coins[arr[i]],b=coins[arr[j]];if(a.dead||b.dead)continue;
+      const id=arr[i]<arr[j]?arr[i]+"-"+arr[j]:arr[j]+"-"+arr[i];if(seen.has(id))continue;seen.add(id);
+      const dx=b.x-a.x,dz=b.z-a.z,d2=dx*dx+dz*dz,min=a.r+b.r;if(d2>=min*min||d2===0)continue;
+      const d=Math.sqrt(d2),o=min-d,nx=dx/d,nz=dz/d,m1=a.mass,m2=b.mass,s=o/(m1+m2);
+      a.x-=nx*s*m2;a.z-=nz*s*m2;b.x+=nx*s*m1;b.z+=nz*s*m1;
+      const rv=(b.vx-a.vx)*nx+(b.vz-a.vz)*nz;
+      if(rv<0){const e=-0.18,imp=-(1+e)*rv/(1/m1+1/m2);a.vx-=imp*nx/m1;a.vz-=imp*nz/m1;b.vx+=imp*nx/m2;b.vz+=imp*nz/m2;if(Math.random()<.08)sfx("clink")}
+      if(a.kind==="multi"||b.kind==="multi"){const t=a.kind==="multi"?a:b,o2=t===a?b:a;o2.mult=Math.max(o2.mult||0,2);o2.mt=G.multit}
+    }
+  }
+  coins=coins.filter(c=>!c.dead);
+  // solid pusher face so piles actually march toward the lip
+  const pvel=dP/Math.max(dt,.008);
+  for(const c of coins){
+    if(c.dead||c.y>1)continue;
+    if(c.z>=pusher-0.5 && c.z-c.r<pusher){
+      c.z=pusher+c.r*0.98;
+      if(pvel>0)c.vz=Math.max(c.vz,pvel*0.7);
+    }
+  }
+  for(const p of parts){p.x+=p.vx*dt;p.z+=p.vz*dt;p.y+=p.vy*dt;p.vy-=400*dt;p.l-=dt}parts=parts.filter(p=>p.l>0);if(parts.length>350)parts.splice(0,parts.length-350);
+  for(const f of floats){f.y+=30*dt;f.l-=dt}floats=floats.filter(f=>f.l>0);
+  shake*=.88;flash*=.92;
+}
+
+function onLand(c){
+  if(c.kind==="bomb")explode(c);
+  else if(c.kind==="split")splitMe(c);
+  else if(c.kind==="multi")applyMulti(c);
+  else sfx("clink");
+}
+
+function collectPrize(p){
+  if(p.k==="gift"){const n=3+Math.floor(Math.random()*4);G.shine+=n;floatT(p.x,TL,"🎁 +"+n+" shine","#f6d365");burst(p.x,TL,"#ff8fab",16,6)}
+  if(p.k==="gem")spinWheel();
+}
+
+function spinWheel(){
+  M.st.jacks++;sfx("jack");
+  const opts=[["+8 shine",()=>G.shine+=8],["+5 drops",()=>{G.drops+=5}],["+25 score",()=>{G.score+=25;G.cashedR+=25}],["Jackpot ×2 score!",()=>{const a=G.score;G.score+=a;G.cashedR+=a}],["+1 life",()=>{G.lives=Math.min(G.livesMax+1,G.lives+1)}],["3 Gleam coins",()=>addBag(G,"golden",3)]];
+  const o=opts[(Math.random()*opts.length)|0];o[1]();flash=.8;shake=10;
+  banner("🔔 "+o[0]);toast("🔔 Jackpot: "+o[0],"#f6d365");
+}
+// ---------- projection / draw ----------
+function proj(x,z,y){
+  const back=0.62, front=1.18;
+  const t=Math.max(0,Math.min(1,z/TL));
+  const sc=back+(front-back)*t;
+  const tableTop=H*0.22, tableBot=H*0.72;
+  const sy=tableTop+(tableBot-tableTop)*t;
+  const pad=28;
+  const maxHalf=(W/2-pad)/front/(TW/2);
+  const k=Math.min(maxHalf, (W*0.42)/(TW/2));
+  return{sx:W/2+x*sc*k, sy:sy-y*0.55*k*14, sc:sc*k, t};
+}
+function pathTrap(c, z0, z1, w0, w1){
+  const a=proj(-w0,z0,0),b=proj(w0,z0,0),d=proj(w1,z1,0),e=proj(-w1,z1,0);
+  c.beginPath();c.moveTo(a.sx,a.sy);c.lineTo(b.sx,b.sy);c.lineTo(d.sx,d.sy);c.lineTo(e.sx,e.sy);c.closePath();
+}
+function drawTable(){
+  const c=cx;
+  // cabinet
+  const lip=proj(0,TL,0), back=proj(0,0,0);
+  const fl=proj(-TW/2,TL,0), fr=proj(TW/2,TL,0);
+  const bl=proj(-TW/2,0,0), br=proj(TW/2,0,0);
+  const depth=56;
+  c.fillStyle="#1a1008";
+  c.beginPath();c.moveTo(fl.sx-4,fl.sy);c.lineTo(fr.sx+4,fr.sy);c.lineTo(fr.sx+18,fr.sy+depth);c.lineTo(fl.sx-18,fl.sy+depth);c.closePath();c.fill();
+  // tray (front)
+  const tray=c.createLinearGradient(0,fl.sy,0,fl.sy+depth);
+  tray.addColorStop(0,"#3a2a18");tray.addColorStop(1,"#1a1208");
+  c.fillStyle=tray;c.fillRect(fl.sx-8,fl.sy+4,fr.sx-fl.sx+16,depth-8);
+  c.strokeStyle="rgba(255,200,100,.2)";c.strokeRect(fl.sx-8,fl.sy+4,fr.sx-fl.sx+16,depth-8);
+  // side cabinet
+  c.fillStyle="#24180c";
+  c.beginPath();c.moveTo(bl.sx,bl.sy);c.lineTo(fl.sx,fl.sy);c.lineTo(fl.sx-18,fl.sy+depth);c.lineTo(bl.sx-10,H*0.86);c.closePath();c.fill();
+  c.beginPath();c.moveTo(br.sx,br.sy);c.lineTo(fr.sx,fr.sy);c.lineTo(fr.sx+18,fr.sy+depth);c.lineTo(br.sx+10,H*0.86);c.closePath();c.fill();
+
+  // felt (static front + back under)
+  const felt=c.createLinearGradient(0,back.sy,0,fl.sy);
+  felt.addColorStop(0,"#1a5c3a");felt.addColorStop(.5,"#157347");felt.addColorStop(1,"#0e8a4a");
+  pathTrap(c,0,TL,TW/2,TW/2);c.fillStyle=felt;c.fill();
+  // felt grain
+  c.save();c.beginPath();pathTrap(c,0,TL,TW/2,TW/2);c.clip();
+  c.strokeStyle="rgba(0,0,0,.08)";c.lineWidth=1;
+  for(let z=10;z<TL;z+=14){const L=proj(-TW/2,z,0),R=proj(TW/2,z,0);c.beginPath();c.moveTo(L.sx,L.sy);c.lineTo(R.sx,R.sy);c.stroke()}
+  c.restore();
+
+  // gutters
+  c.fillStyle=G&&G.walls?"#8a9aaa":"#2a1a10";
+  pathTrap(c,0,TL,TW/2+6,TW/2+6);c.save();
+  // draw gutter strips
+  const gL0=proj(-TW/2-14,0,0),gL1=proj(-TW/2,0,0),gL2=proj(-TW/2,TL,0),gL3=proj(-TW/2-22,TL,0);
+  c.beginPath();c.moveTo(gL0.sx,gL0.sy);c.lineTo(gL1.sx,gL1.sy);c.lineTo(gL2.sx,gL2.sy);c.lineTo(gL3.sx,gL3.sy);c.closePath();c.fillStyle="#3a2010";c.fill();
+  const gR0=proj(TW/2+14,0,0),gR1=proj(TW/2,0,0),gR2=proj(TW/2,TL,0),gR3=proj(TW/2+22,TL,0);
+  c.beginPath();c.moveTo(gR0.sx,gR0.sy);c.lineTo(gR1.sx,gR1.sy);c.lineTo(gR2.sx,gR2.sy);c.lineTo(gR3.sx,gR3.sy);c.closePath();c.fill();
+  if(G&&G.walls){c.strokeStyle="#c0d0e0";c.lineWidth=3;c.beginPath();c.moveTo(gL1.sx,gL1.sy);c.lineTo(gL2.sx,gL2.sy);c.moveTo(gR1.sx,gR1.sy);c.lineTo(gR2.sx,gR2.sy);c.stroke()}
+
+  // bonus slots
+  if(G&&G.slots){
+    for(const nx of [0.28,0.72]){
+      const x=-TW/2+nx*TW;const a=proj(x-10,TL-6,0),b=proj(x+10,TL-6,0);
+      c.fillStyle="rgba(80,180,255,.45)";c.beginPath();c.moveTo(a.sx,a.sy-2);c.lineTo(b.sx,b.sy-2);c.lineTo(b.sx,b.sy+10);c.lineTo(a.sx,a.sy+10);c.closePath();c.fill();
+      c.fillStyle="#dff";c.font="10px system-ui";c.textAlign="center";c.fillText("3×", (a.sx+b.sx)/2, a.sy+8);
+    }
+  }
+
+  // moving pusher shelf
+  const pe=pusher;
+  pathTrap(c,0,pe,TW/2*(1+(G?G.wide:0)*0.15),TW/2*(1+(G?G.wide:0)));
+  const pg=c.createLinearGradient(0,proj(0,0,0).sy,0,proj(0,pe,0).sy);
+  pg.addColorStop(0,"#c0c8d4");pg.addColorStop(0.5,"#9aa6b5");pg.addColorStop(1,"#e8eef6");
+  c.fillStyle=pg;c.fill();
+  // pusher front lip (thick)
+  const pl=proj(-TW/2*(1+(G?G.wide:0)),pe,0), prr=proj(TW/2*(1+(G?G.wide:0)),pe,0);
+  const pl2=proj(-TW/2*(1+(G?G.wide:0)),pe,6), pr2=proj(TW/2*(1+(G?G.wide:0)),pe,6);
+  c.fillStyle="#dfe6f0";c.beginPath();c.moveTo(pl.sx,pl.sy);c.lineTo(prr.sx,prr.sy);c.lineTo(pr2.sx,pr2.sy-8);c.lineTo(pl2.sx,pl2.sy-8);c.closePath();c.fill();
+  c.strokeStyle="rgba(255,255,255,.5)";c.lineWidth=2;c.beginPath();c.moveTo(pl.sx,pl.sy);c.lineTo(prr.sx,prr.sy);c.stroke();
+  // chrome edge
+  c.strokeStyle="rgba(0,0,0,.25)";c.lineWidth=1;pathTrap(c,0,pe,TW/2,TW/2);c.stroke();
+
+  // front metal lip
+  c.fillStyle="#b8c0cc";
+  const a=proj(-TW/2,TL,0),b=proj(TW/2,TL,0),a2=proj(-TW/2,TL,5),b2=proj(TW/2,TL,5);
+  c.beginPath();c.moveTo(a.sx,a.sy);c.lineTo(b.sx,b.sy);c.lineTo(b.sx,b.sy+8);c.lineTo(a.sx,a.sy+8);c.closePath();c.fill();
+  c.fillStyle="rgba(255,255,255,.35)";c.fillRect(a.sx,a.sy,b.sx-a.sx,2);
+}
+function drawCoin(c){
+  const p=proj(c.x,c.z,c.y);
+  const T=CTYPES[c.kind]||CTYPES.std;
+  const rx=c.r*p.sc, ry=c.r*p.sc*0.45, th=5*p.sc;
+  // shadow
+  cx.fillStyle="rgba(0,0,0,.28)";
+  cx.beginPath();cx.ellipse(p.sx+3,p.sy+th+3,rx,ry,0,0,7);cx.fill();
+  // edge (thickness)
+  cx.fillStyle=T.rim;
+  cx.beginPath();cx.ellipse(p.sx,p.sy+th,rx,ry,0,0,7);cx.fill();
+  cx.fillRect(p.sx-rx,p.sy,rx*2,th);
+  // top disc
+  const g=cx.createRadialGradient(p.sx-rx*0.3,p.sy-ry*0.4,1,p.sx,p.sy,rx);
+  g.addColorStop(0, "#fff8");g.addColorStop(0.18,T.col);g.addColorStop(0.7,T.col);g.addColorStop(1,T.rim);
+  cx.fillStyle=g;
+  cx.beginPath();cx.ellipse(p.sx,p.sy,rx,ry,0,0,7);cx.fill();
+  cx.strokeStyle=T.rim;cx.lineWidth=1.2;cx.stroke();
+  // shine arc
+  cx.strokeStyle="rgba(255,255,255,.7)";cx.lineWidth=1.4;
+  cx.beginPath();cx.ellipse(p.sx,p.sy,rx*0.7,ry*0.7,c.spin,3.5,5.2);cx.stroke();
+  // stamp
+  if(rx>6){cx.fillStyle="rgba(0,0,0,.35)";cx.font=`bold ${Math.max(7,Math.floor(rx*0.7))}px system-ui`;cx.textAlign="center";cx.textBaseline="middle";
+    const label=c.kind==="bomb"?"💣":c.kind==="magnet"?"N":c.kind==="multi"?"×2":c.kind==="golden"?"✦":c.kind==="sticky"?"●":c.kind==="split"?"✚":"";
+    if(label)cx.fillText(label,p.sx,p.sy+0.5);
+    else {cx.beginPath();cx.ellipse(p.sx,p.sy,rx*0.28,ry*0.28,0,0,7);cx.strokeStyle="rgba(0,0,0,.25)";cx.lineWidth=1;cx.stroke()}
+  }
+  if(c.mult>=2){cx.strokeStyle="rgba(200,120,255,.85)";cx.lineWidth=2;cx.beginPath();cx.ellipse(p.sx,p.sy,rx+3,ry+2,0,0,7);cx.stroke()}
+}
+function drawPrize(p){
+  const s=proj(p.x,p.z,0);
+  cx.font=`${20*s.sc}px system-ui`;cx.textAlign="center";cx.textBaseline="middle";
+  cx.fillText(p.k==="gem"?"💎":"🎁",s.sx,s.sy);
+}
+function drawPip(t){
+  // Pip sits on the left cabinet
+  const x=36,y=H*0.16;
+  const bob=Math.sin(t*3)*2;
+  cx.save();cx.translate(x,y+bob);
+  // body
+  cx.fillStyle="#1a1a22";cx.beginPath();cx.ellipse(0,16,16,14,0,0,7);cx.fill();
+  cx.fillStyle="#2a2a36";cx.beginPath();cx.ellipse(-2,8,12,11,0,0,7);cx.fill();
+  // wing gleam
+  cx.fillStyle="#3a3a4a";cx.beginPath();cx.ellipse(8,18,8,6,-0.4,0,7);cx.fill();
+  // head
+  cx.fillStyle="#111018";cx.beginPath();cx.arc(2,0,11,0,7);cx.fill();
+  // beak
+  cx.fillStyle="#f0a030";cx.beginPath();cx.moveTo(10,-1);cx.lineTo(22,2);cx.lineTo(10,5);cx.closePath();cx.fill();
+  // eye
+  cx.fillStyle="#fff";cx.beginPath();cx.ellipse(5,-2,3.2,3.6,0,0,7);cx.fill();
+  cx.fillStyle="#111";cx.beginPath();cx.arc(6,-2,1.6,0,7);cx.fill();
+  cx.fillStyle="#fff";cx.beginPath();cx.arc(6.6,-2.6,0.6,0,7);cx.fill();
+  // happy if scoring
+  if(G&&G.cashedR>0&&mode==="play"){cx.strokeStyle="#111";cx.lineWidth=1;cx.beginPath();cx.arc(2,4,3,0.2,3);cx.stroke()}
+  cx.restore();
+}
+function drawAim(){
+  if(!aiming||mode!=="play")return;
+  const z=dropZ();
+  const p=proj(aimX,z,40);
+  const p2=proj(aimX,z,0);
+  cx.strokeStyle="rgba(255,230,120,.7)";cx.setLineDash([6,4]);cx.lineWidth=2;
+  cx.beginPath();cx.moveTo(p.sx,p.sy);cx.lineTo(p2.sx,p2.sy);cx.stroke();cx.setLineDash([]);
+  cx.fillStyle="rgba(255,230,120,.25)";cx.beginPath();cx.ellipse(p2.sx,p2.sy,14,7,0,0,7);cx.fill();
+  cx.strokeStyle="#f6d365";cx.stroke();
+}
+function dropZ(){
+  const n=G&&G.narrow?0.55:1;
+  return Math.min(pusher-8, 28)*n + (G&&G.narrow?10:0);
+}
+
+function draw(now){
+  const c=cx;c.setTransform(DPR,0,0,DPR,0,0);
+  // bg
+  const bg=c.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,"#152038");bg.addColorStop(1,"#0a0e18");c.fillStyle=bg;c.fillRect(0,0,W,H);
+  // vignette lights
+  const lg=c.createRadialGradient(W*0.5,H*0.15,10,W*0.5,H*0.3,H*0.7);
+  lg.addColorStop(0,"rgba(255,210,120,.08)");lg.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=lg;c.fillRect(0,0,W,H);
+
+  const sx=M.set.shake&&shake>0.3?(Math.random()-.5)*shake:0, sy=M.set.shake&&shake>0.3?(Math.random()-.5)*shake:0;
+  c.save();c.translate(sx,sy);
+  drawTable();
+  // sort draw: back to front
+  const stuff=coins.map(o=>({z:o.z,d:o,k:"c"})).concat(prizes.map(o=>({z:o.z,d:o,k:"p"})));
+  stuff.sort((a,b)=>a.z-b.z);
+  for(const s of stuff){if(s.k==="c")drawCoin(s.d);else drawPrize(s.d)}
+  for(const p of parts){const q=proj(p.x,p.z,p.y);c.globalAlpha=Math.max(0,p.l*2);c.fillStyle=p.c;c.beginPath();c.arc(q.sx,q.sy,p.r*q.sc*1.4,0,7);c.fill()}c.globalAlpha=1;
+  for(const f of floats){const q=proj(f.x,f.z,f.y);c.globalAlpha=Math.min(1,f.l*1.6);c.font="bold 16px system-ui";c.textAlign="center";c.lineWidth=4;c.strokeStyle="rgba(0,0,0,.55)";c.strokeText(f.txt,q.sx,q.sy);c.fillStyle=f.c;c.fillText(f.txt,q.sx,q.sy)}c.globalAlpha=1;
+  drawAim();
+  c.restore();
+  if(flash>0.02){c.fillStyle="rgba(255,230,150,"+flash*.4+")";c.fillRect(0,0,W,H)}
+  drawPip(now/1000);
+  // hanging lamp
+  c.fillStyle="rgba(255,220,140,.15)";c.beginPath();c.ellipse(W/2,H*0.08,80,18,0,0,7);c.fill();
+}
+
+// ---------- modes / loop ----------
+let mode="title"; // title, play, shop, pause, over, wheel
+let lastT=performance.now(), fpsA=0,fpsN=0,FPS=60, autoT=0, uiT=0;
+function frame(now){
+  const dt=Math.min(.05,(now-lastT)/1000);lastT=now;
+  fpsA+=dt;fpsN++;if(fpsA>=1){FPS=Math.round(fpsN/fpsA);fpsA=0;fpsN=0}
+  if(mode==="play"&&G){const n=fast?fast:1;for(let i=0;i<n;i++){G.rt+=dt;stepPhysics(dt);stepPlay(dt)}}
+  else if(mode==="title"){// idle preview table
+    if(!coins.length){G=baseRun();resetTable();G=null}
+    stepPhysics(dt*0.6);
+  }
+  draw(now);
+  requestAnimationFrame(frame);
+}
+let fast=0;
+function stepPlay(dt){
+  if(G.autoOn&&M.unlocks.auto){autoT+=dt;const iv=0.7/(1+.15*B("autoB"))/(1+.2*ST("time"));if(autoT>=iv){autoT=0;autoDrop()}}
+  if(G.drops<=0&&!aiming)G.restT=(G.restT||0)+dt;else G.restT=0;
+  uiT+=dt;if(uiT>.2){uiT=0;renderHUD();checkRoundEnd()}
+}
+
+function stillMoving(){for(const c of coins){if(Math.hypot(c.vx,c.vz)>8||c.y>1)return true}return false}
+
+let endArmed=0;
+function checkRoundEnd(){
+  if(!G||G.over||mode!=="play"||G._lock)return;
+  if(G.score>=G.quota){G.restT=0;roundWin();return}
+  if(G.drops<=0 && !aiming && (G.restT||0)>=6.5 && !stillMoving()){G.restT=0;roundFail()}
+}
+
+function roundWin(){
+  if(G._lock)return;G._lock=1;
+  if(G.lives===1&&G.livesMax>1)M.st.comeback=1;
+  if(G.guttered===0)M.st.clean++;
+  M.st.rounds++;M.st.bestF=Math.max(M.st.bestF,G.floor);
+  if(G.interest)G.shine+=Math.floor(G.shine/8)*G.interest;
+  const feat=Math.round((4+G.floor*1.2+G.cashedR*0.15)*(1+.1*U("shine"))*(1+.25*B("feath"))*Math.pow(1.5,ST("crest3")));
+  M.feathers+=feat;G._feat=feat;
+  G.splits.push({f:G.floor,t:G.rt,boss:G.boss});
+  if(G.boss)M.st.bosses++;
+  banner(G.floor===20?"🏰 Vault cleared!":"Quota met!");
+  sfx("ok");
+  if(G.floor===20&&!G.endless){G.won=1;M.st.vaults++;recordRun();victoryScreen();return}
+  openShop();
+  checkAch();save();
+}
+function roundFail(){
+  if(G._lock)return;
+  if(!G.retry){G.retry=1;G.drops+=8;G.restT=0;toast("⏳ One more push! +8 drops","#f6d365");banner("Keep going!");renderHUD();return}
+  G.lives--;
+  if(G.lives<=0){G.over=1;G._lock=1;mode="over";runOver();return}
+  G.retry=0;G.drops+=6;G.restT=0;
+  toast("💔 Life lost! +6 emergency drops","#ff8b8b");banner("Still in!");
+  renderHUD();
+}
+function recordRun(){
+  const rec={t:G.rt,sp:G.splits.map(s=>s.t),f:G.floor,d:new Date().toLocaleDateString()};
+  M.lb.push(rec);M.lb.sort((a,b)=>a.t-b.t);M.lb=M.lb.slice(0,10);
+}
+function runOver(){
+  const feat=Math.round((2+G.floor+G.shine*0.2)*(1+.1*U("shine"))*(1+.25*B("feath")));
+  M.feathers+=feat;M.st.runs++;M.st.bestF=Math.max(M.st.bestF,G.floor);checkAch();save();
+  showSheet(`<div style="font-size:48px;text-align:center">🐦‍⬛💔</div><h2>Run over</h2>
+    <p style="text-align:center">Reached floor <b>${G.floor}</b>${G.boss?" (boss)":""}<br>Time ${fmtT(G.rt)} · +${feat} 🪶 feathers</p>
+    <div class="btns" style="display:flex;flex-direction:column;gap:8px"><button class="g" onclick="closeSheet();startRun(0)">▶ Play again</button>
+    <button class="dim" onclick="closeSheet();goTitle()">Nest</button></div>`);
+}
+function victoryScreen(){
+  mode="over";
+  showSheet(`<div style="font-size:52px;text-align:center">🏰✨</div><h2>The Vault is Open!</h2>
+    <p style="text-align:center">Pip is delighted. Time <b>${fmtT(G.rt)}</b>${M.lb[0]&&M.lb[0].t===G.rt?' <span class="gn">· PB!</span>':''}</p>
+    <table>${G.splits.filter(s=>s.boss||s.f%5===0||s.f===G.floor).map(s=>`<tr><td>Floor ${s.f}${s.boss?" 💀":""}</td><td>${fmtT(s.t)}</td></tr>`).join("")}</table>
+    <p style="text-align:center;color:#c9b48a">Skyward is available. Or keep going in Endless, where quotas keep climbing.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="g" onclick="enterEndless()">🌌 Endless mode</button>
+      <button class="p" onclick="closeSheet();openMeta()">⭐ Skyward / Moult</button>
+      <button class="dim" onclick="closeSheet();goTitle()">Nest</button>
+    </div>`);
+}
+function enterEndless(){G.endless=1;G.won=0;G._lock=0;G.floor=21;closeSheet();startFloor()}
+
+function startRun(){
+  M.st.runs++;G=baseRun();G.autoOn=0;selType="std";mode="play";
+  $("title").style.display="none";$("top").style.display="block";$("dock").style.display="block";showAuto();
+  startFloor();closeSheet();closeModal();
+}
+function startFloor(){
+  G._lock=0;G.score=0;G.cashedR=0;G.guttered=0;G.boss=isBoss(G.floor)?1:0;
+  G.quota=quotaFor(G.floor,G.boss);
+  G.drops=G.dropsMax;
+  if(G.boss){const q=bossQuirk(G.floor);q.fn(G);G.quirk=q;banner("💀 "+q.n);toast("💀 Boss: "+q.n+" — "+q.d,"#f6d365")}
+  else banner("Floor "+G.floor);
+  resetTable();mode="play";renderHUD();renderTypes();G.restT=0;G.retry=0;endArmed=0;
+}
+function nextFloor(){
+  G.floor++;G.dropsMax=12+U("pocket")+B("dropsB")+2*ST("cosD")+(G.relics.filter(r=>r.k==="drops").length);
+  // drops already incremented by relics during run via fn
+  startFloor();
+}
+
+function banner(t){const b=$("banner");b.textContent=t;b.style.opacity="1";clearTimeout(banner._t);banner._t=setTimeout(()=>b.style.opacity="0",1400)}
+function toast(t,col){const d=document.createElement("div");d.className="toast glass";d.innerHTML=t;if(col)d.style.color=col;$("toasts").appendChild(d);setTimeout(()=>d.remove(),2400);while($("toasts").children.length>3)$("toasts").firstChild.remove()}
+
+function showAuto(){const a=$("autoBtn");if(M.unlocks.auto||(G&&G.autoOn)){a.style.display="block";a.classList.toggle("on",!!(G&&G.autoOn))}else a.style.display="none"}
+function toggleAuto(){if(!G||!(M.unlocks.auto||G.autoOn))return;G.autoOn^=1;$("autoBtn").classList.toggle("on",!!G.autoOn)}
+function autoDrop(){
+  if(mode!=="play"||G.drops<=0)return;
+  // aim near densest x on the pusher
+  let best=0,bs=-1;
+  for(let x=-TW/2+20;x<TW/2-20;x+=16){let s=0;for(const c of coins){if(c.z<pusher+40)s+=1/(1+Math.abs(c.x-x)*0.05)}if(s>bs){bs=s;best=x}}
+  // pick special if useful
+  if((G.bag.bomb||0)>0&&coins.length>12&&Math.random()<.3)dropAt(best,"bomb");
+  else if((G.bag.magnet||0)>0&&Math.random()<.2)dropAt(best,"magnet");
+  else if((G.bag.split||0)>0&&Math.random()<.2)dropAt(best,"split");
+  else if((G.bag.golden||0)>0&&Math.random()<.15)dropAt(best,"golden");
+  else if((G.bag.multi||0)>0&&Math.random()<.2)dropAt(best,"multi");
+  else dropAt(best,haveType(selType)?selType:"std");
+}
+
+function haveType(k){if(k==="std")return true;return (G.bag[k]||0)>0}
+function dropAt(x,kind){
+  if(!G||mode!=="play"||G.drops<=0)return false;
+  kind=kind||selType||"std";
+  if(!haveType(kind))kind="std";
+  if(kind!=="std")G.bag[kind]--;
+  G.drops--;G.restT=0;
+  const z=dropZ();
+  const sc=G.scatter;
+  const c=mkCoin(x+(Math.random()-.5)*sc*0.15,z+(Math.random()-.5)*8,kind,{y:46,vy:-10,vx:(Math.random()-.5)*sc,vz:20+Math.random()*30});
+  coins.push(c);renderTypes();renderHUD();return true;
+}
+
+// input
+function screenToX(sx,sy){
+  // invert proj roughly at drop Z
+  const z=dropZ();const p0=proj(-TW/2,z,0),p1=proj(TW/2,z,0);
+  const t=(sx-p0.sx)/(p1.sx-p0.sx||1);
+  let x=-TW/2+t*TW;
+  const lim=G&&G.narrow?TW*0.22:TW*0.46;
+  return Math.max(-lim,Math.min(lim,x));
+}
+let ptr=null;
+cv.addEventListener("pointerdown",e=>{
+  if(mode!=="play")return;
+  try{cv.setPointerCapture(e.pointerId)}catch(_){}
+  ptr={x:e.clientX,y:e.clientY};aiming=1;aimX=screenToX(e.clientX,e.clientY);
+});
+cv.addEventListener("pointermove",e=>{if(!ptr||mode!=="play")return;aimX=screenToX(e.clientX,e.clientY)});
+function endPtr(e){if(!ptr)return;ptr=null;if(mode==="play"&&aiming){dropAt(aimX,selType)}aiming=0}
+cv.addEventListener("pointerup",endPtr);cv.addEventListener("pointercancel",()=>{ptr=null;aiming=0});
+
+function renderHUD(){
+  if(!G)return;
+  $("stats").innerHTML=`
+    <div class="chip"><i>Floor</i><b>${G.floor}${G.boss?" 💀":""}</b></div>
+    <div class="chip"><i>Drops</i><b>🪙 ${G.drops}</b></div>
+    <div class="chip"><i>Lives</i><b>${"❤️".repeat(G.lives)}${"🖤".repeat(Math.max(0,G.livesMax-G.lives))}</b></div>
+    <div class="chip"><i>Shine</i><b>✨ ${fmt(G.shine)}</b></div>
+    <div class="chip"><i>Feathers</i><b>🪶 ${fmt(M.feathers)}</b></div>`;
+  const pct=Math.min(100,G.score/G.quota*100);
+  $("quota").querySelector("i").style.width=pct+"%";
+  $("quota").querySelector("span").textContent=G.score+" / "+G.quota;
+  $("floorlab").textContent=G.quirk&&G.boss?G.quirk.n:"Gleamshelf";
+  $("timer").textContent="⏱ "+fmtT(G.rt);
+  $("dropHint").textContent=G.drops>0?"Drag to drop":"Wait for settle…";
+}
+function renderTypes(){
+  if(!G)return;
+  const keys=["std","silver","gold","bomb","magnet","multi","golden","sticky","split"];
+  $("types").innerHTML=keys.filter(k=>k==="std"||(G.bag[k]||0)>0).map(k=>{
+    const T=CTYPES[k];const n=k==="std"?"∞":G.bag[k];
+    return `<div class="tb ${selType===k?"on":""}" data-k="${k}"><span class="ic">${T.ic}</span>${T.n}<br><small>${n}</small></div>`;
+  }).join("");
+  $("types").querySelectorAll(".tb").forEach(el=>el.onclick=()=>{selType=el.dataset.k;renderTypes()});
+}
+
+function priceOf(it){return Math.max(1,Math.round(it.c*(1-.08*B("shopB"))))}
+
+function openShop(){
+  mode="shop";
+  rollShop();
+  renderShop();
+}
+let shopItems=[];
+function rollShop(){
+  const n=3+U("shop3");
+  const pool=SHOP.filter(it=>{
+    if(it.need&&!it.need(G))return false;
+    const owned=G.relics.filter(r=>r.k===it.k).length;
+    return owned<it.stack;
+  });
+  shopItems=[];
+  const bag=pool.slice();
+  for(let i=0;i<n&&bag.length;i++){
+    const w=bag.map(it=>[0.55,0.28,0.13,0.04][it.r]);
+    const tot=w.reduce((a,b)=>a+b,0);let r=Math.random()*tot,pick=0;
+    for(let j=0;j<bag.length;j++){r-=w[j];if(r<=0){pick=j;break}}
+    shopItems.push(bag.splice(pick,1)[0]);
+  }
+}
+function renderShop(){
+  const cards=shopItems.map((it,i)=>{
+    const r=RAR[it.r],c=priceOf(it);
+    return `<div class="card ${r}"><div class="ic">${it.ic}</div><div class="tx"><span class="rare-tag">${r}</span><b>${it.n}</b>${it.d}</div>
+      <button class="g" ${G.shine>=c?"":"disabled"} onclick="buyShop(${i})">✨${c}</button></div>`;
+  }).join("");
+  showSheet(`<h2>🛒 Wayside Stall</h2>
+    <p style="text-align:center;margin:0 0 8px;color:#c9b48a">Floor ${G.floor} cleared · ✨ ${G.shine} shine · 🪶 +${G._feat||0}</p>
+    <div class="cards">${cards||"<p>Sold out!</p>"}</div>
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <button class="b" ${G.rerolls>0||G.shine>=5?"":"disabled"} onclick="doReroll()">🎲 Reroll ${G.rerolls>0?"(free ×"+G.rerolls+")":"✨5"}</button>
+      <button class="g" style="flex:1" onclick="leaveShop()">Continue ▶</button>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#9aa">${G.relics.length?("Relics: "+G.relics.map(r=>r.ic).join(" ")):"No relics yet."}</div>`);
+}
+window.buyShop=i=>{
+  const it=shopItems[i];if(!it)return;const c=priceOf(it);if(G.shine<c)return;
+  G.shine-=c;it.fn(G);G.relics.push({k:it.k,ic:it.ic,n:it.n});M.st.buys++;shopItems.splice(i,1);
+  toast(it.ic+" "+it.n,"#f6d365");renderShop();
+};
+window.doReroll=()=>{if(G.rerolls>0)G.rerolls--;else if(G.shine>=5)G.shine-=5;else return;rollShop();renderShop()};
+window.leaveShop=()=>{if(G.lives<G.livesMax)G.lives++;G.retry=0;closeSheet();nextFloor()};
+
+// ---------- sheets / meta / more ----------
+function showSheet(h){$("sbox").innerHTML=h;$("sheet").style.display="flex"}
+function closeSheet(){$("sheet").style.display="none"}
+function showModal(h){$("mbox").innerHTML=h;$("modal").style.display="flex"}
+function closeModal(){$("modal").style.display="none"}
+window.closeSheet=closeSheet;window.closeModal=closeModal;
+
+function goTitle(){mode="title";G=null;coins=[];$("title").style.display="flex";$("top").style.display="none";$("dock").style.display="none";updateTitle();resetPreview()}
+function resetPreview(){G=baseRun();resetTable();G=null}
+function updateTitle(){$("titleMeta").textContent=`🪶 ${fmt(M.feathers)}   👑 ${fmt(M.crests)}   ⭐ ${M.stars}   ·  best floor ${M.st.bestF}  ·  v${VER}`}
+
+function openPause(){
+  if(mode!=="play")return;mode="pause";
+  showSheet(`<h2>Paused</h2><p style="text-align:center">Floor ${G.floor} · ${fmtT(G.rt)}</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="g" onclick="closeSheet();mode='play'">Resume</button>
+      <button class="dim" onclick="closeSheet();openMore()">Settings · Speedrun</button>
+      <button class="r" onclick="closeSheet();G.over=1;G.lives=0;mode='over';runOver()">Abandon run</button>
+    </div>`);
+}
+window.openPause=openPause;
+
+function unlockCost(u){const lv=U(u.k);return Math.round(u.c*Math.pow(1.65,lv))}
+function blessCost(p,arr,own){const lv=own[p.k]||0;return Math.ceil(p.c*Math.pow(p.g||1.7,lv))}
+
+function openMeta(){
+  const tab=openMeta._t||"unlocks";
+  const seg=(k,n)=>`<div class="${tab===k?"on":""}" onclick="openMeta._t='${k}';openMeta()">${n}</div>`;
+  let body="";
+  if(tab==="unlocks"){
+    body=UNLOCKS.map(u=>{
+      const lv=U(u.k),c=unlockCost(u),max=lv>=u.max;
+      const lock=u.need==="moult"&&!M.st.moults||u.need==="f10"&&M.st.bestF<10;
+      return `<div class="row"><div style="font-size:24px;width:36px;text-align:center">${u.ic}</div><div class="tx"><b>${u.n} ${lv}/${u.max}</b>${u.d}</div>${max?"MAX":lock?"🔒":`<button class="g" ${M.feathers>=c?"":"disabled"} onclick="buyUnlock('${u.k}')">🪶${c}</button>`}</div>`;
+    }).join("");
+  }
+  if(tab==="moult"){
+    const g=crestGain(),s=starGain();
+    body=`<div class="row"><div class="tx"><b>👑 ${fmt(M.crests)} Crests</b>You gain Crests and keep your Feathers, unlocks, Stars and records.</div>
+      <button class="p" ${g>0?"":"disabled"} onclick="doMoult()">Moult +${fmt(g)}</button></div>
+      <p style="font-size:12px;color:#c9b48a">Available once you have reached floor 10 (best ${M.st.bestF}). Crests buy Nest Blessings for later runs.</p>
+      ${BLESS.map(p=>{const lv=B(p.k),c=blessCost(p,BLESS,M.bless),max=lv>=p.max;return `<div class="row"><div style="font-size:22px;width:32px;text-align:center">${p.ic}</div><div class="tx"><b>${p.n} ${lv}/${p.max}</b>${p.d}</div>${max?"MAX":`<button class="p" ${M.crests>=c?"":"disabled"} onclick="buyBless('${p.k}')">👑${c}</button>`}</div>`}).join("")}
+      <h2 style="margin-top:12px">⭐ Skyward</h2>
+      <div class="row"><div class="tx"><b>⭐ ${M.stars} Stars</b>Skyward after opening the Vault. You gain <b>+${s} Stars</b> and also bank <b>+${fmt(g)} Crests</b> (Feathers kept too).</div>
+      <button class="p" ${s>0?"":"disabled"} onclick="doSky()">Skyward</button></div>
+      ${STARS.map(p=>{const lv=ST(p.k),c=blessCost(p,STARS,M.starsP),max=lv>=p.max;return `<div class="row"><div style="font-size:22px;width:32px;text-align:center">${p.ic}</div><div class="tx"><b>${p.n} ${lv}/${p.max}</b>${p.d}</div>${max?"MAX":`<button class="p" ${M.stars>=c?"":"disabled"} onclick="buyStar('${p.k}')">⭐${c}</button>`}</div>`}).join("")}`;
+  }
+  showSheet(`<h2>🪺 Pip's Nest</h2><div class="seg">${seg("unlocks","🪶 Unlocks")}${seg("moult","👑 Prestige")}</div>
+    <p style="text-align:center;color:#c9b48a;margin:0 0 8px">🪶 ${fmt(M.feathers)} · 👑 ${fmt(M.crests)} · ⭐ ${M.stars}</p>
+    ${body}
+    <button class="dim" style="width:100%;margin-top:8px" onclick="closeSheet()">Close</button>`);
+}
+window.openMeta=openMeta;
+window.buyUnlock=k=>{const u=UNLOCKS.find(x=>x.k===k);const c=unlockCost(u);if(M.feathers<c||U(k)>=u.max)return;M.feathers-=c;M.unlocks[k]=(U(k)+1);if(k==="auto")toast("🤖 AUTO unlocked! It appears in runs.");save();openMeta()};
+window.buyBless=k=>{const p=BLESS.find(x=>x.k===k);const c=blessCost(p,BLESS,M.bless);if(M.crests<c||B(k)>=p.max)return;M.crests-=c;M.bless[k]=B(k)+1;save();openMeta()};
+window.buyStar=k=>{const p=STARS.find(x=>x.k===k);const c=blessCost(p,STARS,M.starsP);if(M.stars<c||ST(k)>=p.max)return;M.stars-=c;M.starsP[k]=ST(k)+1;save();openMeta()};
+
+function crestGain(){if(M.st.bestF<10&&M.st.vaults<1)return 0;const g=Math.floor((1+M.st.bestF/2+Math.sqrt(M.feathers)/8)*(1+.15*U("crestG"))*(1+.2*B("crest2"))*(1+.5*ST("crest3")));return Math.max(1,g)}
+function starGain(){if(M.st.vaults<1)return 0;return Math.max(1,Math.floor((1+M.st.vaults+M.st.bestF/10)*(1+.2*B("starG"))))}
+
+window.doMoult=()=>{
+  const g=crestGain();if(!g)return;
+  showModal(`<h2>👑 Moult?</h2><p>You gain <b>${fmt(g)} Crests</b>. Feathers, unlocks, Stars, trophies and records are kept. This is a prestige layer for Nest Blessings — it does not wipe your nest.</p>
+    <div style="display:flex;gap:8px;justify-content:center"><button class="r" onclick="closeModal()">Cancel</button><button class="p" onclick="closeModal();confirmMoult(${g})">Moult</button></div>`);
+};
+window.confirmMoult=g=>{M.crests+=g;M.st.moults++;toast("👑 Moulted! +"+fmt(g)+" Crests","#f6d365");checkAch();save();openMeta()};
+window.doSky=()=>{
+  const s=starGain(),g=crestGain();if(!s)return;
+  showModal(`<h2>⭐ Skyward?</h2><p>You gain <b>${s} Stars</b> AND bank <b>${fmt(g)} Crests</b>. Feathers, Crests total, blessings and unlocks are kept.</p>
+    <div style="display:flex;gap:8px;justify-content:center"><button class="r" onclick="closeModal()">Cancel</button><button class="p" onclick="closeModal();confirmSky(${s},${g})">Skyward</button></div>`);
+};
+window.confirmSky=(s,g)=>{M.stars+=s;M.crests+=g;M.st.skys++;toast("⭐ Skyward! +"+s+" Stars, +"+fmt(g)+" Crests","#e0b0ff");checkAch();save();openMeta()};
+
+let moreSeg="speed";
+function openMore(){
+  const seg=(k,n)=>`<div class="${moreSeg===k?"on":""}" onclick="moreSeg='${k}';openMore()">${n}</div>`;
+  let body="";
+  if(moreSeg==="speed"){
+    const pb=M.lb[0];
+    body=`<h2>⏱ Speedrun</h2><p style="font-size:12px;color:#c9b48a">Timer starts with each run. Splits are recorded at every floor. The board is local, for Vault clears.</p>
+      <table><tr><td><b>#</b></td><td><b>Time</b></td><td>Floors</td><td>Date</td></tr>
+      ${M.lb.length?M.lb.map((r,i)=>`<tr><td>#${i+1}</td><td><b>${fmtT(r.t)}</b></td><td>${r.f}</td><td>${r.d}</td></tr>`).join(""):"<tr><td colspan=4>No Vault clears yet.</td></tr>"}</table>
+      ${G?`<p>Current run: ${fmtT(G.rt)}</p><table>${G.splits.map(s=>`<tr><td>Floor ${s.f}${s.boss?" 💀":""}</td><td>${fmtT(s.t)}</td></tr>`).join("")}</table>`:""}
+      <button class="dim" onclick="copySplits()">📋 Copy splits</button>`;
+  }
+  if(moreSeg==="ach"){
+    const n=ACH.filter(a=>M.ach[a[0]]).length;
+    body=`<h2>🏆 Trophies ${n}/${ACH.length}</h2>`+ACH.map(a=>`<div class="row" style="opacity:${M.ach[a[0]]?1:.4}"><div style="font-size:22px">${M.ach[a[0]]?"🏆":"🔒"}</div><div class="tx"><b>${a[1]}</b>${a[2]}</div></div>`).join("");
+  }
+  if(moreSeg==="set"){
+    body=`<h2>⚙️ Settings</h2>
+      <div class="row"><div class="tx"><b>Particles & effects</b></div><button onclick="M.set.fx^=1;save();openMore()">${M.set.fx?"On":"Off"}</button></div>
+      <div class="row"><div class="tx"><b>Screen shake</b></div><button onclick="M.set.shake^=1;save();openMore()">${M.set.shake?"On":"Off"}</button></div>
+      <div class="row"><div class="tx"><b>Sound (clinks)</b></div><button onclick="M.set.snd^=1;save();openMore()">${M.set.snd?"On":"Off"}</button></div>
+      <div class="row"><div class="tx"><b>Save</b>Autosaves on events</div><button onclick="save();toast('Saved 💾')">Save</button><button onclick="exportSave()">Export</button><button onclick="importSave()">Import</button></div>
+      <div class="row"><div class="tx"><b>Hard reset</b>Wipes everything</div><button class="r" onclick="hardReset()">Reset</button></div>
+      <div style="font-size:11px;color:#789">Gleamshelf v${VER} · no ads, no tracking · ${FPS} fps<br>An original game. Not affiliated with any console title.</div>`;
+  }
+  showSheet(`<div class="seg">${seg("speed","⏱ Speedrun")}${seg("ach","🏆 Trophies")}${seg("set","⚙️ Settings")}</div>${body}
+    <button class="dim" style="width:100%;margin-top:8px" onclick="closeSheet();if(mode==='pause'){mode='play'}">Close</button>`);
+}
+window.openMore=openMore;
+window.copySplits=()=>{const t="Gleamshelf\n"+(G?G.splits.map(s=>"Floor "+s.f+": "+fmtT(s.t)).join("\n"):"")+(M.lb[0]?"\nBest vault: "+fmtT(M.lb[0].t):"");try{navigator.clipboard.writeText(t)}catch(e){}toast("Copied 📋")};
+window.exportSave=()=>{const s=btoa(unescape(encodeURIComponent(JSON.stringify(M))));try{navigator.clipboard.writeText(s)}catch(e){}showModal(`<h2>Export</h2><textarea style="width:100%;height:120px;font-size:9px">${s}</textarea><button onclick="closeModal()">Close</button>`)};
+window.importSave=()=>{const s=prompt("Paste save");if(!s)return;try{M=Object.assign(freshMeta(),JSON.parse(decodeURIComponent(escape(atob(s.trim())))));save();toast("Imported ✅");updateTitle()}catch(e){toast("Bad save","#f88")}};
+window.hardReset=()=>{showModal(`<h2>Hard reset?</h2><p>This deletes ALL feathers, Crests, Stars, unlocks and records.</p><div style="display:flex;gap:8px;justify-content:center"><button class="dim" onclick="closeModal()">Cancel</button><button class="r" onclick="localStorage.removeItem(SK);M=freshMeta();save();closeModal();closeSheet();goTitle();toast('Wiped')">Delete</button></div>`)};
+
+function checkAch(){for(const a of ACH)if(!M.ach[a[0]]&&a[3](M)){M.ach[a[0]]=1;toast("🏆 "+a[1],"#f6d365")}save()}
+
+window.startRun=startRun;window.goTitle=goTitle;window.toggleAuto=toggleAuto;window.enterEndless=enterEndless;
+
+// boot
+updateTitle();
+// preview coins
+G=baseRun();resetTable();G=null;
+requestAnimationFrame(frame);
+
+window.__gs={
+  get G(){return G},get M(){return M},get coins(){return coins},get mode(){return mode},get FPS(){return FPS},get pusher(){return pusher},
+  VER,startRun,dropAt,startFloor,nextFloor,openShop,leaveShop,buyShop,doReroll,goTitle,
+  stepPhysics,setFast(n){fast=n},
+  tick(seconds){const n=Math.ceil(seconds*60);for(let i=0;i<n;i++){if(G&&mode==="play"){G.rt+=1/60;if(G.drops<=0&&!aiming)G.restT=(G.restT||0)+1/60;else G.restT=0}stepPhysics(1/60)}if(typeof checkRoundEnd==="function")checkRoundEnd()},setMode(m){mode=m},quotaFor,isBoss,
+  fillShine(n){if(G)G.shine=n},setScore(n){if(G)G.score=n},winRound(){roundWin()},
+  bag(){return G&&G.bag},sel(k){selType=k;renderTypes()},
+  forceQuota(){if(G)G.quota=Math.max(1,G.quota)},
+  settle(){for(let i=0;i<180;i++)stepPhysics(1/60)},
+  clearTable(){coins=[]},
+  spawn:spawnOnTable,mkCoin,cashAll(){for(const c of coins.slice()){c.z=TL+1}stepPhysics(1/60)},
+  get shopItems(){return shopItems},
+  crestGain,starGain,doMoult:()=>window.confirmMoult(crestGain()),doSky:()=>window.confirmSky(starGain(),crestGain()),
+  closeSheet,closeModal,openMeta,openMore,checkAch,save,checkRoundEnd,roundWin,roundFail,
+  TL,TW
+};
+</script></body></html>
